@@ -53,16 +53,16 @@ sudo apt install caddy
 Crea la carpeta donde residirá el sistema:
 
 ```bash
-sudo mkdir -p /srv/kyvid-business
-sudo chown $USER:$USER /srv/kyvid-business
-cd /srv/kyvid-business
+sudo mkdir -p /srv/kyvid
+sudo chown $USER:$USER /srv/kyvid
+cd /srv/kyvid
 ```
 
 ### B. Subir el código
 Sube los archivos de tu proyecto siguiendo esta estructura:
-- `/srv/kyvid-business/app/` (Código de la aplicación)
-- `/srv/kyvid-business/landing/` (Archivos de la landing page)
-- `/srv/kyvid-business/docker-compose.yml` (Archivo maestro)
+- `/srv/kyvid/app/` (Código de la aplicación)
+- `/srv/kyvid/landing/` (Archivos HTML de la landing page)
+- `/srv/kyvid/docker-compose.yml` (Archivo maestro)
 
 ### C. Configurar el Caddy del Servidor (Host)
 Ahora configuramos el Caddy principal de tu servidor para que dirija el tráfico a los contenedores de Docker.
@@ -73,22 +73,30 @@ sudo nano /etc/caddy/Caddyfile
 
 Añade estas configuraciones (manteniendo las que ya tengas, como n8n):
 
-```text
-# n8n (Existente)
+
 n8n1.kyvid.com {
-    reverse_proxy localhost:5678
+    reverse_proxy localhost:5678 {
+        flush_interval -1
+    }
 }
 
 # Kyvid Flow - Aplicación (Software)
 flow.kyvid.com {
-    reverse_proxy localhost:8080
+    reverse_proxy localhost:8080 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Port 443
+        header_up X-Forwarded-For {remote}
+        header_up Host {host}
+    }
 }
 
 # Kyvid.com - Landing Page (Marketing)
 kyvid.com, www.kyvid.com {
     reverse_proxy localhost:8081
 }
-```
+
+
+
 
 Recarga Caddy para aplicar los cambios:
 ```bash
@@ -96,7 +104,7 @@ sudo systemctl reload caddy
 ```
 
 ### D. Lanzar Contenedores
-Desde `/srv/kyvid-business`, ejecuta:
+Desde `/srv/kyvid`, ejecuta:
 
 ```bash
 docker compose up -d --build
@@ -107,6 +115,7 @@ docker compose up -d --build
 ## 5. Primer Inicio y Seguridad
 
 1.  **Acceso**: Ingresa a `https://flow.kyvid.com` o `https://kyvid.com`.
+
 2.  **Login de 2 Pasos (App)**:
     *   Paso 1: Ingresa el código de usuario (por defecto: `admin`).
     *   Paso 2: Ingresa la contraseña definida en `ADMIN_PASSWORD` en el `docker-compose.yml`.

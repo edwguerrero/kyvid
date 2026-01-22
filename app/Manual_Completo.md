@@ -52,7 +52,12 @@ Esta guía asume que ya tienes un servidor Ubuntu en Oracle Cloud con Docker y D
     Verifica que el archivo `Caddyfile` tenga el dominio correcto:
     ```
     flow.kyvid.com {
-        reverse_proxy kyvid-app:80
+        reverse_proxy localhost:8080 {
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-Port 443
+            header_up X-Forwarded-For {remote}
+            header_up Host {host}
+        }
     }
     ```
     *Asegúrate de apuntar el registro DNS tipo A de `flow.kyvid.com` a la IP Pública de tu servidor.*
