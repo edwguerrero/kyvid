@@ -258,4 +258,64 @@ CREATE TABLE `settings` (
 INSERT INTO `settings` (`key`, `value`) VALUES 
 ('admin_password', 'ADMINISTRATOR');
 
+-- ----------------------------
+-- Table structure for auth_accounts
+-- ----------------------------
+DROP TABLE IF EXISTS `auth_accounts`;
+CREATE TABLE `auth_accounts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` varchar(20) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `role` varchar(20) DEFAULT 'viewer',
+  `attributes_json` json DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `last_login` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `auth_accounts` (`code`, `name`, `password_hash`, `role`) VALUES
+('admin', 'Administrador del Sistema', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'); 
+-- Hash corresponds to 'password' (placeholder) or generic. 
+-- Note: Real system uses API to seed ADMIN_PASSWORD env var if empty, but this ensures table exists.
+
+-- ----------------------------
+-- Table structure for action_logs
+-- ----------------------------
+DROP TABLE IF EXISTS `action_logs`;
+CREATE TABLE `action_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `report_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `action_code` varchar(100) DEFAULT NULL,
+  `trigger_type` enum('manual','robot','system') DEFAULT 'manual',
+  `status` enum('success','error','warning') DEFAULT 'success',
+  `message` text,
+  `details_json` json DEFAULT NULL,
+  `duration_ms` int(11) DEFAULT 0,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_report` (`report_id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- Table structure for shared_reports
+-- ----------------------------
+DROP TABLE IF EXISTS `shared_reports`;
+CREATE TABLE `shared_reports` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `token` varchar(100) NOT NULL,
+  `report_id` int(11) NOT NULL,
+  `filters_json` text,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `is_active` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  CONSTRAINT `fk_shared_report` FOREIGN KEY (`report_id`) REFERENCES `reports` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
