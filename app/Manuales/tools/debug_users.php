@@ -1,5 +1,5 @@
 <?php
-require_once 'config/db.php';
+require_once '../../config/db.php';
 try {
     $stmt = $pdo->query("SELECT * FROM auth_accounts");
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);

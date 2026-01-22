@@ -3,7 +3,7 @@
 // Script sencillo para verificar conexión a DB y estado de tablas
 // Útil para debugging rápido post-instalación
 
-require_once 'config/db.php';
+require_once '../../config/db.php';
 
 header('Content-Type: text/html; charset=utf-8');
 
