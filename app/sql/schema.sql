@@ -149,11 +149,11 @@ INSERT INTO `customers` (`name`, `email`, `region`) VALUES
 ('Umbrella Corp', 'secure@umbrella.com', 'South');
 
 INSERT INTO `products` (`code`, `name`, `category`, `price`, `stock`) VALUES
-('P001', 'Smartphone X', 'Electronics', 699.99, 50),
+('P001', 'Smartphone X', 'Electronics', 699.99, 15),
 ('P002', 'Laptop Pro', 'Electronics', 1299.99, 30),
-('P003', 'Ergonomic Chair', 'Furniture', 199.99, 100),
+('P003', 'Ergonomic Chair', 'Furniture', 199.99, 5),
 ('P004', 'Wooden Desk', 'Furniture', 299.99, 20),
-('P005', 'T-Shirt Basic', 'Clothing', 19.99, 200);
+('P005', 'T-Shirt Basic', 'Clothing', 19.99, 120);
 
 INSERT INTO `sales` (`customer_id`, `product_id`, `sale_date`, `quantity`, `total_price`) VALUES
 (1, 1, '2023-10-01', 2, 1399.98),
@@ -167,50 +167,30 @@ INSERT INTO `sales` (`customer_id`, `product_id`, `sale_date`, `quantity`, `tota
 -- ----------------------------
 -- Seeding Reports (Core Examples)
 -- ----------------------------
-INSERT INTO `reports` (`code`, `category`, `name`, `description`, `sql_query`, `php_script`, `columns_json`, `parameters_json`, `grouping_config`, `phpscript2`, `is_view`) VALUES
-(
-    'SALES_BY_DATE', 
-    'Ventas',
-    'Ventas por Fecha', 
-    'Reporte detallado de ventas filtrado por rango de fechas.',
-    'SELECT s.id, s.sale_date, c.name as customer, p.name as product, s.quantity, s.total_price FROM sales s JOIN customers c ON s.customer_id = c.id JOIN products p ON s.product_id = p.id',
-    NULL,
-    '["ID", "Fecha", "Cliente", "Producto", "Cantidad", "Total"]',
-    '[{"type": "date_range", "field": "s.sale_date", "label": "Rango de Fechas"}]',
-    NULL,
-    NULL,
-    0
-),
-(
-    'PRICE_REVISION',
-    'Financieros',
-    'Preliquidación de Precios (Editable)',
-    'Edita el "Nuevo Precio" manualmente y actualiza la base de datos con "Procesar".',
-    'SELECT id, code, name, price, price as new_price FROM products',
-    NULL,
-    '["ID", "Código", "Producto", "Precio Actual", "Precio Nuevo (Editar)"]',
-    '[]',
-    NULL,
-    '$updated = 0;\nforeach ($results as $row) {\n    if (isset($row["new_price"]) && is_numeric($row["new_price"]) && (float)$row["new_price"] !== (float)$row["price"]) {\n        $stmt = $pdo->prepare("UPDATE products SET price = ? WHERE id = ?");\n        $stmt->execute([$row["new_price"], $row["id"]]);\n        $updated++;\n    }\n}\n$message = $updated > 0 ? "✅ Se actualizaron $updated precios." : "ℹ️ No se detectaron cambios de precio.";',
-    0
-),
-(
-    'RPT_AUTO_EMAIL_SALES', 
-    'Automatización', 
-    'Reporte Diario de Ventas (Email)', 
-    'Resumen de ventas del día que se envía automáticamente.', 
-    'SELECT s.sale_date as Fecha, c.name as Cliente, p.name as Producto, s.total_price as Total FROM sales s JOIN customers c ON s.customer_id = c.id JOIN products p ON s.product_id = p.id WHERE s.sale_date >= CURDATE()',
-    NULL, 
-    '["Fecha", "Cliente", "Producto", "Total"]', 
-    '[]',
-    NULL,
-    NULL, 
-    0
-);
+INSERT INTO `reports` (`id`, `code`, `category`, `name`, `description`, `sql_query`, `php_script`, `columns_json`, `parameters_json`, `grouping_config`, `phpscript2`, `is_view`) VALUES
+(1, 'SALES_BY_DATE', 'Ventas', 'Ventas por Fecha', 'Reporte detallado de ventas filtrado por rango de fechas.', 'SELECT s.id, s.sale_date, c.name as customer, p.name as product, s.quantity, s.total_price FROM sales s JOIN customers c ON s.customer_id = c.id JOIN products p ON s.product_id = p.id', NULL, '["ID", "Fecha", "Cliente", "Producto", "Cantidad", "Total"]', '[{"type": "date_range", "field": "s.sale_date", "label": "Rango de Fechas"}]', NULL, NULL, 0),
+(2, 'PRICE_REVISION', 'Financieros', 'Preliquidación de Precios (Editable)', 'Edita el "Nuevo Precio" manualmente y actualiza la base de datos con "Procesar".', 'SELECT id, code, name, price, price as new_price FROM products', NULL, '["ID", "Código", "Producto", "Precio Actual", "Precio Nuevo (Editar)"]', '[]', NULL, '$updated = 0;\nforeach ($results as $row) {\n    if (isset($row["new_price"]) && is_numeric($row["new_price"]) && (float)$row["new_price"] !== (float)$row["price"]) {\n        $stmt = $pdo->prepare("UPDATE products SET price = ? WHERE id = ?");\n        $stmt->execute([$row["new_price"], $row["id"]]);\n        $updated++;\n    }\n}\n$message = $updated > 0 ? "✅ Se actualizaron $updated precios." : "ℹ️ No se detectaron cambios de precio.";', 0),
+(3, 'RPT_AUTO_EMAIL_SALES', 'Automatización', 'Reporte Diario de Ventas (Email)', 'Resumen de ventas del día que se envía automáticamente.', 'SELECT s.sale_date as Fecha, c.name as Cliente, p.name as Producto, s.total_price as Total FROM sales s JOIN customers c ON s.customer_id = c.id JOIN products p ON s.product_id = p.id WHERE s.sale_date >= CURDATE()', NULL, '["Fecha", "Cliente", "Producto", "Total"]', '[]', NULL, NULL, 0),
+(4, 'STOCK_STATUS', 'Inventario', 'Estado de Inventario', 'Muestra los productos con stock bajo (menos de 20 unidades).', 'SELECT code as Codigo, name as Producto, category as Categoria, stock as Existencias FROM products WHERE stock < 20', NULL, '["Codigo", "Producto", "Categoria", "Existencias"]', '[]', NULL, NULL, 0),
+(5, 'SALES_BY_CAT_CHART', 'Ventas', 'Ventas por Categoría (Barras)', 'Reporte optimizado para visualización de gráficos.', 'SELECT p.category as Categoria, SUM(s.total_price) as Total FROM sales s JOIN products p ON s.product_id = p.id GROUP BY p.category', NULL, '["Categoria", "Total"]', '[]', NULL, NULL, 0),
+(6, 'KPI_TOTAL_REVENUE', 'Indicadores', 'KPI: Ingresos Totales', 'Valor único de ingresos para usar en dashboards.', 'SELECT SUM(total_price) as Valor FROM sales', NULL, '["Valor"]', '[]', NULL, NULL, 0);
 
--- Associate Post-Actions through Update to keep JSON clean in VALUES
+-- Associate Post-Actions
 UPDATE reports SET post_action_code = 'UTIL_EMAIL_REPORT', post_action_params = '{"destinatario": "tu-email@ejemplo.com", "asunto": "📊 Resumen de Ventas Diario", "adjuntar_csv": true}' WHERE code = 'RPT_AUTO_EMAIL_SALES';
 
+-- ----------------------------
+-- Seeding DB Connections (Examples)
+-- ----------------------------
+INSERT INTO `db_connections` (`name`, `type`, `host`, `port`, `database_name`, `username`, `password_encrypted`, `is_active`) VALUES 
+('Servidor Producción (Mock)', 'mysql', '127.0.0.1', 3306, 'prod_db', 'db_user', 'ENCRYPTED_PLACEHOLDER', 0);
+
+-- ----------------------------
+-- Seeding Unified Connections (Examples)
+-- ----------------------------
+INSERT INTO `connections` (`name`, `type`, `provider`, `config_json`, `encrypted_creds`, `is_active`) VALUES 
+('Gmail Corporativo', 'SMTP', 'gmail', '{"host":"smtp.gmail.com","port":"465","username":"tu-app@gmail.com"}', 'ENCRYPTED_PLACEHOLDER', 1),
+('OpenAI GPT-4o', 'AI', 'openai', '{"model":"gpt-4o","base_url":"https://api.openai.com/v1"}', 'ENCRYPTED_PLACEHOLDER', 1),
+('Telegram Alertas', 'TELEGRAM', 'telegram', '{}', 'ENCRYPTED_PLACEHOLDER', 1);
 
 -- ----------------------------
 -- Table structure for scenarios (Canvas Container)
@@ -226,6 +206,9 @@ CREATE TABLE `scenarios` (
   `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `scenarios` (`id`, `name`, `description`, `category`) VALUES 
+(1, 'Dashboard Operativo', 'Resumen general de ventas, inventario crítico e indicadores clave del negocio.', 'General');
 
 -- ----------------------------
 -- Table structure for scenario_widgets (Positioning and Display)
@@ -244,6 +227,13 @@ CREATE TABLE `scenario_widgets` (
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_widget_scenario` FOREIGN KEY (`scenario_id`) REFERENCES `scenarios` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `scenario_widgets` (`scenario_id`, `report_id`, `title_override`, `display_type`, `chart_type`, `grid_layout`) VALUES 
+(1, 6, 'Ingresos Totales', 'kpi', 'bar', '{"x":0,"y":0,"w":3,"h":2}'),
+(1, 4, 'Stock Bajo Crítico', 'table', 'bar', '{"x":3,"y":0,"w":9,"h":4}'),
+(1, 5, 'Ventas por Categoría', 'chart', 'pie', '{"x":0,"y":2,"w":3,"h":4}'),
+(1, 1, 'Histórico de Ventas', 'table', 'bar', '{"x":0,"y":6,"w":12,"h":4}');
+
 
 -- ----------------------------
 -- Table structure for settings
@@ -278,8 +268,6 @@ CREATE TABLE `auth_accounts` (
 
 INSERT INTO `auth_accounts` (`code`, `name`, `password_hash`, `role`) VALUES
 ('admin', 'Administrador del Sistema', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'); 
--- Hash corresponds to 'password' (placeholder) or generic. 
--- Note: Real system uses API to seed ADMIN_PASSWORD env var if empty, but this ensures table exists.
 
 -- ----------------------------
 -- Table structure for action_logs
