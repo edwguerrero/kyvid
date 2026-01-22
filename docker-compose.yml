@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # 1. Aplicación Principal (PHP/Apache)
+  kyvid-app:
+    build: ./app
+    container_name: kyvid_app
+    restart: unless-stopped
+    depends_on:
+      - kyvid-db
+    environment:
+      - DB_HOST=kyvid-db
+      - DB_NAME=kyvid
+      - DB_USER=kyvid_user
+      - DB_PASS=secret_kyvid_password
+      - ADMIN_PASSWORD=ADMINISTRATOR
+      - ENCRYPTION_KEY=super-secure-key-change-me
+    volumes:
+      - ./app/uploads:/var/www/html/uploads
+    ports:
+      - "8080:80"
+    networks:
+      - kyvid-net
+
+  # 2. Base de Datos (MySQL 8)
+  kyvid-db:
+    image: mysql:8.0
+    container_name: kyvid_db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_super_secret
+      - MYSQL_DATABASE=kyvid
+      - MYSQL_USER=kyvid_user
+      - MYSQL_PASSWORD=secret_kyvid_password
+    volumes:
+      - kyvid_db_data:/var/lib/mysql
+      # Inicializar esquema automáticamente la primera vez
+      - ./app/sql/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - kyvid-net
+
+  # 3. Landing Page (Servidor Estático)
+  kyvid-landing:
+    image: caddy:latest
+    container_name: kyvid_landing
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - ./landing/Caddyfile:/etc/caddy/Caddyfile
+      - ./landing:/srv/landing
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - kyvid-net
+
+volumes:
+  kyvid_db_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  kyvid-net:
+    driver: bridge

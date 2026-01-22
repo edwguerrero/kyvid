@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obtener Chat ID de Telegram</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 50px;
+        }
+
+        .card {
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .step {
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            font-weight: bold;
+            color: #0d6efd;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">🔍 Obtener tu Chat ID de Telegram</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Sigue estos pasos para conectar Kyvid Flow con tu Telegram personal o grupal.
+                </p>
+
+                <div class="step">
+                    <span class="step-number">1.</span>
+                    Busca el bot <strong>@userinfobot</strong> en Telegram o
+                    <a href="https://t.me/userinfobot" target="_blank">haz clic aquí</a>.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2.</span>
+                    Inicia el bot (haz clic en <strong>Start</strong>) o envíale cualquier mensaje.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3.</span>
+                    El bot responderá con tu información. Copia el número que aparece junto a <strong>Id</strong>.
+                    <div class="alert alert-secondary mt-2 p-2 small">
+                        Ejemplo:<br>
+                        User: Juan Perez<br>
+                        Id: <strong>123456789</strong> <span class="text-success"><-- Este es tu ID</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4.</span>
+                    <label class="form-label fw-bold">Pega tu Token del Bot aquí para probar (Opcional):</label>
+                    <div class="input-group mb-2">
+                        <input type="text" id="botToken" class="form-control" placeholder="123456:ABC-DefGhiJklMno...">
+                    </div>
+
+                    <label class="form-label fw-bold">Tu Chat ID:</label>
+                    <div class="input-group">
+                        <input type="text" id="chatId" class="form-control" placeholder="Ingresa el ID obtenido...">
+                        <button class="btn btn-success" onclick="testMessage()">Probar Mensaje</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function testMessage() {
+            const token = document.getElementById('botToken').value.trim();
+            const chatId = document.getElementById('chatId').value.trim();
+
+            if (!token || !chatId) {
+                Swal.fire('Error', 'Necesitas el Token del Bot y el Chat ID para probar.', 'warning');
+                return;
+            }
+
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+            const payload = {
+                chat_id: chatId,
+                text: "✅ ¡Éxito! Kyvid Flow está conectado con este chat."
+            };
+
+            Swal.fire({ title: 'Enviando...', didOpen: () => Swal.showLoading() });
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.ok) {
+                        Swal.fire('¡Funcionó!', 'Deberías haber recibido un mensaje en Telegram.', 'success');
+                    } else {
+                        Swal.fire('Error de Telegram', data.description, 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error de Red', 'No se pudo conectar con la API de Telegram.', 'error');
+                });
+        }
+    </script>
+</body>
+
+</html>

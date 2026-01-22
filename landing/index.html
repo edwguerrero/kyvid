@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyvid Flow | Inteligencia de Negocios Automatizada</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --accent: #00ff88;
+            --dark-bg: #0b0f19;
+            --card-bg: #151b2b;
+            --text-main: #e0e6ed;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        .hero-section {
+            padding: 120px 0 80px;
+            background: radial-gradient(circle at 50% 10%, #1a233a 0%, var(--dark-bg) 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(13, 110, 253, 0.15);
+            border-color: rgba(13, 110, 253, 0.3);
+        }
+
+        .pricing-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card.popular {
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 30px rgba(13, 110, 253, 0.2);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background: var(--primary);
+            color: white;
+            padding: 5px 40px;
+            transform: rotate(45deg);
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .btn-glow {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 0 15px rgba(13, 110, 253, 0.4);
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .btn-glow:hover {
+            background-color: #0b5ed7;
+            box-shadow: 0 0 25px rgba(13, 110, 253, 0.6);
+            color: white;
+        }
+
+        .check-list li {
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .check-list i {
+            color: var(--accent);
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .nav-link {
+            color: #a0aec0;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top"
+        style="background: rgba(11, 15, 25, 0.9); backdrop-filter: blur(10px);">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-white fs-4" href="#"><i
+                    class="bi bi-diagram-3-fill text-primary me-2"></i>Kyvid Flow</a>
+            <button class="navbar-toggler navbar-dark border-0" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="#features">Funcionalidades</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#pricing">Planes</a></li>
+                    <li class="nav-item ms-lg-3"><a class="btn btn-outline-light btn-sm rounded-pill px-4"
+                            href="https://flow.kyvid.com">Acceder a la Demo</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="hero-section text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div
+                        class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 mb-4">
+                        🚀 Nuevo: Versión Enterprise 2.0
+                    </div>
+                    <h1 class="display-3 fw-bold mb-4">Donde tus datos <br><span class="gradient-text">toman acción
+                            real.</span></h1>
+                    <p class="lead text-secondary mb-5 mx-auto" style="max-width: 600px;">
+                        Kyvid Flow no es solo un dashboard. Es un sistema nervioso central que conecta tu base de datos
+                        con acciones automatizadas. Reportes SQL con IA, alertas en tiempo real y flujos de trabajo sin
+                        código.
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="https://flow.kyvid.com" class="btn btn-glow btn-lg rounded-pill px-5 py-3 fw-bold"><i
+                                class="bi bi-play-circle me-2"></i>Ver Demo Gratis</a>
+                        <a href="#pricing" class="btn btn-outline-light btn-lg rounded-pill px-5 py-3">Ver Planes</a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 container-fluid px-0 hero-image-container">
+                <style>
+                    .hero-image-container {
+                        perspective: 2000px;
+                        padding-top: 2rem;
+                    }
+
+                    .hero-image {
+                        transform: rotateX(4deg) scale(0.98);
+                        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+                        max-width: 100%;
+                        height: auto;
+                        box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.5), 0 30px 60px -30px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+                    }
+
+                    .hero-image:hover {
+                        transform: rotateX(0deg) scale(1.01);
+                        box-shadow: 0 70px 120px -20px rgba(13, 110, 253, 0.15);
+                    }
+                </style>
+                <img src="assets/img/dashboard.jpg" class="img-fluid rounded-4 hero-image" alt="Interfaz de Kyvid Flow"
+                    loading="eager" decoding="async">
+            </div>
+        </div>
+    </header>
+
+    <!-- Features -->
+    <section id="features" class="py-5">
+        <div class="container py-5">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="display-5 text-primary mb-3"><i class="bi bi-robot"></i></div>
+                        <h4>Robot Autónomo</h4>
+                        <p style="color: #cbd5e1;">Automatiza el envío de reportes. Tu asistente virtual trabaja 24/7
+                            enviando métricas a Telegram o Email sin intervención humana.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="display-5 text-warning mb-3"><i class="bi bi-stars"></i></div>
+                        <h4>SQL con IA</h4>
+                        <p style="color: #cbd5e1;">¿No sabes SQL? No importa. Pídele a la IA lo que necesitas en
+                            lenguaje natural y ella escribirá las consultas por ti.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="display-5 text-success mb-3"><i class="bi bi-lightning-charge"></i></div>
+                        <h4>Action Engine (FaaS)</h4>
+                        <p style="color: #cbd5e1;">Convierte datos en acciones. Si el inventario baja, el sistema
+                            dispara automáticamente una orden de compra o alerta.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="display-5 text-info mb-3"><i class="bi bi-graph-up-arrow"></i></div>
+                        <h4>Análisis de Escenarios con IA</h4>
+                        <p style="color: #cbd5e1;">Nuestra IA analiza tus reportes y dashboards para generar narrativas
+                            estratégicas, ayudándote a entender el "por qué" detrás de tus números.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="display-5 text-danger mb-3"><i class="bi bi-database-fill-gear"></i></div>
+                        <h4>Conexiones Multi-Fuente</h4>
+                        <p style="color: #cbd5e1;">Centraliza tus datos. Conecta MySQL, PostgreSQL y servicios externos
+                            (SMTP, Telegram, AI) en un solo bóveda segura.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="display-5 text-secondary mb-3"><i class="bi bi-window-stack"></i></div>
+                        <h4>Dashboards Interactivos</h4>
+                        <p style="color: #cbd5e1;">Crea tableros de control personalizados. Organiza tus reportes en un
+                            canvas interactivo para una monitorización en tiempo real.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-5 bg-dark bg-opacity-50">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Elige tu modelo de inversión</h2>
+                <p style="color: #cbd5e1;">Flexibilidad total: Cómpralo una vez o úsalo como servicio.</p>
+            </div>
+
+            <div class="row justify-content-center g-4">
+
+                <!-- Plan Solo Código (Developer) -->
+                <div class="col-lg-5 col-md-6">
+                    <div class="pricing-card h-100 p-4 d-flex flex-column border-secondary border-opacity-25">
+                        <div class="mb-4">
+                            <h5 class="text-uppercase text-secondary fw-bold small">Solo Código (Developer)</h5>
+                            <div class="display-4 fw-bold text-white">$500 <span class="fs-5 text-secondary">USD</span>
+                            </div>
+                            <p class="text-secondary mt-2">Acceso completo al código fuente para implementación propia.
+                            </p>
+                        </div>
+
+                        <div class="alert alert-secondary bg-opacity-10 border-0 text-secondary small mb-3">
+                            <i class="bi bi-tools me-1"></i> Ideal para desarrolladores o técnicos.
+                        </div>
+
+                        <ul class="list-unstyled check-list flex-grow-1 text-secondary small">
+                            <li><i class="bi bi-check-circle-fill text-white"></i> Código Fuente Completo (ZIP/Git)</li>
+                            <li><i class="bi bi-check-circle-fill text-white"></i> Manual de Instalación PDF</li>
+                            <li><i class="bi bi-x-circle-fill text-danger"></i> Sin soporte técnico incluido</li>
+                            <li><i class="bi bi-x-circle-fill text-danger"></i> Sin actualizaciones automáticas</li>
+                        </ul>
+
+                        <div class="border-top border-secondary border-opacity-25 pt-3 mt-2 mb-4">
+                            <p class="small text-muted mb-0"><i class="bi bi-ticket-perforated text-warning"></i>
+                                Soporte por demanda: <strong>$20 USD / Ticket</strong></p>
+                        </div>
+
+                        <a href="https://api.whatsapp.com/send/?phone=573054292583&text=Hola%2C%20quiero%20comprar%20el%20Codigo%20Fuente%20de%20Kyvid%20Flow%20(Plan%20Developer)"
+                            target="_blank"
+                            class="btn btn-outline-light w-100 rounded-pill py-3 fw-bold mt-auto">Comprar Código</a>
+                    </div>
+                </div>
+
+                <!-- Plan Licencia Enterprise (Full) -->
+                <div class="col-lg-5 col-md-6">
+                    <div class="pricing-card popular h-100 p-4 d-flex flex-column bg-gradient border-primary shadow-lg">
+                        <div class="pricing-badge">RECOMENDADO</div>
+                        <div class="mb-4">
+                            <h5 class="text-uppercase text-primary fw-bold small">Licencia Enterprise</h5>
+                            <div class="display-4 fw-bold text-white">$1000 <span class="fs-5 text-secondary">USD</span>
+                            </div>
+                            <p class="text-secondary mt-2">Solución llave en mano con acompañamiento profesional.</p>
+                        </div>
+
+                        <div class="alert alert-success bg-opacity-10 border-0 text-white small mb-3">
+                            <i class="bi bi-star-fill me-1 text-warning"></i> Incluye: <strong>Instalación
+                                Asistida</strong> + 1 Año Soporte.
+                        </div>
+
+                        <ul class="list-unstyled check-list flex-grow-1 text-secondary small">
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Código Fuente Completo</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> <strong>Instalación Remota
+                                    incluida</strong> (1 servidor)</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> 1 Año de Actualizaciones y Soporte
+                            </li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> 5 Tickets de soporte / mes
+                                incluidos</li>
+                        </ul>
+
+                        <div class="border-top border-secondary border-opacity-25 pt-3 mt-2 mb-4">
+                            <p class="small text-muted mb-0">Renovación anual (Opcional): <strong>$100 USD</strong></p>
+                        </div>
+
+                        <a href="https://api.whatsapp.com/send/?phone=573054292583&text=Hola%2C%20estoy%20interesado%20en%20la%20Licencia%20Enterprise%20de%20Kyvid%20Flow"
+                            target="_blank" class="btn btn-glow w-100 rounded-pill py-3 fw-bold mt-auto">Obtener
+                            Licencia Full</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Pago PayPal -->
+            <div class="row justify-content-center mt-5" id="pago">
+                <div class="col-lg-10 text-center p-5 rounded-4 border border-primary border-opacity-50 shadow-lg"
+                    style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 110, 253, 0.05) 100%);">
+                    <h3 class="fw-bold text-white mb-4"><i class="bi bi-paypal text-primary me-2"></i>Pago Seguro con
+                        PayPal</h3>
+                    <p class="mb-4" style="color: #cbd5e1; font-size: 1.1rem;">Adquiere tu licencia de forma inmediata y
+                        comienza a automatizar tus datos hoy mismo.</p>
+                    <div class="d-flex flex-wrap justify-content-center gap-4">
+                        <a href="https://www.paypal.me/edwinguerrero/500" target="_blank"
+                            class="btn btn-outline-primary rounded-pill px-5 py-3 fw-bold">
+                            Pagar Plan Developer ($500)
+                        </a>
+                        <a href="https://www.paypal.me/edwinguerrero/1000" target="_blank"
+                            class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-lg">
+                            Pagar Plan Enterprise ($1000)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Legal & License -->
+    <section id="legal" class="py-5">
+        <div class="container py-5">
+            <div class="row g-5">
+                <div class="col-md-6">
+                    <h3 class="fw-bold text-white mb-4"><i
+                            class="bi bi-file-earmark-code text-primary me-2"></i>Licencia Open-Mod</h3>
+                    <p style="color: #cbd5e1;">Nuestra licencia está diseñada para dar libertad total al cliente:</p>
+                    <ul class="list-unstyled" style="color: #cbd5e1;">
+                        <li class="mb-3"><i class="bi bi-check-lg text-primary me-2"></i><strong>Modificación
+                                Total:</strong> Una vez adquirida la licencia, tienes acceso al código fuente completo y
+                            estás autorizado para modificarlo según tus necesidades.</li>
+                        <li class="mb-3"><i class="bi bi-check-lg text-primary me-2"></i><strong>Versiones
+                                Propias:</strong> Puedes crear versiones derivadas del software para uso interno o para
+                            ofrecer a tus propios clientes (bajo tu propia marca).</li>
+                        <li class="mb-3"><i class="bi bi-check-lg text-primary me-2"></i><strong>Propiedad del
+                                Código:</strong> No dependes de suscripciones; el código vive en tu infraestructura para
+                            siempre.</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h3 class="fw-bold text-white mb-4"><i class="bi bi-shield-check text-primary me-2"></i>Privacidad y
+                        Datos</h3>
+                    <p class="small mb-3" style="color: #cbd5e1;">Cumplimiento con Meta Business Suite y normativas de
+                        protección de datos (Colombia):</p>
+                    <div class="p-4 rounded-4 border border-primary border-opacity-25 shadow-lg"
+                        style="font-size: 0.9rem; height: 350px; overflow-y: auto; background: rgba(13, 110, 253, 0.05); color: #cbd5e1;">
+
+                        <h6 class="text-white fw-bold mb-3">Quiénes Somos</h6>
+                        <p>La dirección de nuestro sitio web es: <a href="https://kyvid.com"
+                                class="text-primary text-decoration-none">https://kyvid.com</a>.</p>
+                        <p>Bienvenido, <strong>Kyvid Flow</strong> es un sitio web informativo sobre implementación de
+                            sistemas de información. Por favor, leer cuidadosamente los Términos y
+                            Condiciones Generales del sitio <strong>https://kyvid.com</strong> que se detallan a
+                            continuación. Es importante que preste atención a lo establecido en el presente convenio.
+                        </p>
+                        <p>Además, como las condiciones pueden variar o ser modificadas a lo largo del tiempo, es
+                            obligación del Visitante asegurarse de revisar y aceptar las condiciones más recientes
+                            disponibles en el sitio web de Kyvid Flow.</p>
+
+                        <h6 class="text-white fw-bold mb-3">Comentarios</h6>
+                        <p>Cuando los visitantes dejan comentarios en el sitio, recopilamos los datos que se muestran en
+                            el formulario de comentarios, y también la dirección IP del visitante y la cadena del agente
+                            de usuario del navegador para ayudar a la detección de spam.</p>
+
+                        <h6 class="text-white fw-bold mb-3">Cookies</h6>
+                        <p>Si deja un comentario en nuestro sitio, puede optar por guardar su nombre, dirección de
+                            correo electrónico y sitio web en cookies. Estos son para su conveniencia para que no tenga
+                            que volver a completar sus datos cuando deje otro comentario. Estas cookies durarán un año.
+                        </p>
+
+                        <h6 class="text-white fw-bold mb-3">Tratamiento de Datos Personales</h6>
+                        <p>Las clases de datos personales que el presente sitio puede recolectar incluyen el nombre y el
+                            apellido de la persona, domicilio, número de teléfono, cédula o nit y dirección de correo
+                            electrónico (datos no sensibles). Kyvid Corp no recabará ningún dato personal sobre su
+                            persona a menos que el Visitante voluntariamente lo provea. El ingreso de los datos
+                            personales implica el consentimiento del Visitante a ceder sus datos a Kyvid Corp y ser
+                            parte de la base de datos establecida.</p>
+
+                        <h6 class="text-white fw-bold mb-3">Resguardo de Datos Del Visitante</h6>
+                        <p>Toda la información del Visitante reposará en servidores en la nube operados por empresas
+                            generalmente reconocidas como de primera categoría en el mercado nacional o internacional.
+                            El Visitante reconoce que Kyvid Corp, como parte de sus políticas de protección de la
+                            información, generará copias periódicas de seguridad de los datos del Visitante.</p>
+
+                        <h6 class="text-white fw-bold mb-3">Legislación Aplicable Y Jurisdicción</h6>
+                        <p>Este contrato se rige por las leyes de la <strong>República de Colombia</strong>. Si
+                            cualquier parte de este contrato se declara nula o contraria a la ley, entonces la provisión
+                            inválida o no exigible se considerará sustituida por una disposición válida que más se
+                            acerque a la intención original.</p>
+
+                        <h6 class="text-white fw-bold mb-3">Remarketing y Big Data</h6>
+                        <p>Kyvid Flow utiliza las audiencias de remarketing de Google Analytics para su uso en Google
+                            AdWords, con el fin de publicar campañas de remarketing dirigidas a sus usuarios. El usuario
+                            acepta que su información sea tratada para efectos de Big Data y análisis estadístico.</p>
+
+                        <hr class="border-primary border-opacity-25 my-4">
+
+                        <h6 class="text-white fw-bold mb-3">Nota de Privacidad (Self-Hosted)</h6>
+                        <p class="small italic text-white-50">Kyvid Flow es un software que ejecutas localmente. Kyvid
+                            Corp NO tiene acceso a la información confidencial de tu empresa. El dueño de los datos eres
+                            tú.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WhatsApp Float -->
+    <a href="https://api.whatsapp.com/send/?phone=573054292583&text=Hola%2C%20quiero%20hablar%20con%20un%20asesor%20de%20Kyvid&type=phone_number&app_absent=0"
+        target="_blank"
+        class="btn btn-success rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+        style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; z-index: 1000; transition: transform 0.3s;">
+        <i class="bi bi-whatsapp fs-2"></i>
+    </a>
+    <style>
+        .btn-success.rounded-circle:hover {
+            transform: scale(1.1);
+            background-color: #25D366;
+            border-color: #25D366;
+        }
+    </style>
+
+    <!-- Footer -->
+    <footer class="py-4 border-top border-secondary border-opacity-25 text-center text-secondary">
+        <div class="container">
+            <div class="mb-3">
+                <a href="https://api.whatsapp.com/send/?phone=573054292583&text=Hola%2C%20quiero%20hablar%20con%20un%20asesor%20de%20Kyvid"
+                    target="_blank" class="text-secondary text-decoration-none me-4 hover-white"><i
+                        class="bi bi-whatsapp"></i> Hablar con Ventas</a>
+                <a href="javascript:void(0)" onclick="copyEmail(this)"
+                    class="text-secondary text-decoration-none hover-white" title="Click para copiar">
+                    <i class="bi bi-envelope"></i> <span id="emailText">soporte@kyvid.com</span>
+                </a>
+            </div>
+            <p class="mb-0">&copy; 2026 Kyvid Flow. Todos los derechos reservados. Un producto de <strong
+                    class="text-white">Kyvid Corp</strong>.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function copyEmail(element) {
+            const email = "soporte@kyvid.com";
+            navigator.clipboard.writeText(email).then(() => {
+                const originalText = document.getElementById('emailText').innerText;
+                document.getElementById('emailText').innerText = "¡Copiado!";
+                document.getElementById('emailText').style.color = "#00ff88";
+
+                setTimeout(() => {
+                    document.getElementById('emailText').innerText = originalText;
+                    document.getElementById('emailText').style.color = "";
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>

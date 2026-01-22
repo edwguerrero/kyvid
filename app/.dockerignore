@@ -1,0 +1,10 @@
+# Evitar que archivos de otros servicios entren al contenedor de la App
+landing_site/
+sql/
+docker-compose.yml
+Dockerfile
+Caddyfile
+.git/
+.agent/
+*.md
+uploads/

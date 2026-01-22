@@ -1,0 +1,6 @@
+# Caddyfile para el contenedor Docker (Puerto interno 80, expuesto como 8081)
+:80 {
+    # Servir la Landing Page
+    root * /srv/landing
+    file_server
+}
