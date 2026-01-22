@@ -87,7 +87,13 @@ if (!isset($_SESSION['user_id'])) {
                 </form>
             </div>
             
-            <div class="mt-4 pt-3 border-top">
+                <div class="mt-3">
+                    <p class="small text-muted mb-0">¿No tienes cuenta?</p>
+                    <a href="#" class="text-primary small fw-bold text-decoration-none" onclick="registerUser()">Regístrate</a>
+                    <span class="text-muted mx-1">|</span>
+                    <a href="#" class="text-muted small text-decoration-none" onclick="forgotPassword()">Olvidé mi contraseña</a>
+                </div>
+                <hr class="mt-4 mb-3">
                 <small class="text-muted" style="font-size: 0.75rem;">Kyvid Flow &copy; 2026</small>
             </div>
         </div>
@@ -172,6 +178,84 @@ if (!isset($_SESSION['user_id'])) {
                 document.getElementById('userPass').value = '';
                 document.getElementById('userCode').focus();
             }
+
+            async function registerUser() {
+                const { value: formValues } = await Swal.fire({
+                    title: 'Crear Cuenta',
+                    html:
+                        '<input id="swal-name" class="swal2-input" placeholder="Nombre Completo">' +
+                        '<input id="swal-email" type="email" class="swal2-input" placeholder="Correo Electrónico">',
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Registrarme',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: () => {
+                        const name = document.getElementById('swal-name').value;
+                        const email = document.getElementById('swal-email').value;
+                        if (!name || !email) {
+                            Swal.showValidationMessage('Por favor completa todos los campos');
+                        }
+                        return { name: name, email: email };
+                    }
+                });
+
+                if (formValues) {
+                    Swal.fire({
+                        title: 'Procesando...',
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    try {
+                        const res = await fetch(API_URL + '?action=register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(formValues)
+                        });
+                        const data = await res.json();
+
+                        if (data.success) {
+                            Swal.fire('¡Éxito!', data.message, 'success');
+                        } else {
+                            Swal.fire('Error', data.error || 'No se pudo completar el registro', 'error');
+                        }
+                    } catch (err) {
+                        Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
+                    }
+                }
+            }
+
+            async function forgotPassword() {
+                const { value: email } = await Swal.fire({
+                    title: 'Recuperar Contraseña',
+                    input: 'email',
+                    inputLabel: 'Introduce tu correo electrónico',
+                    inputPlaceholder: 'tu-correo@ejemplo.com',
+                    showCancelButton: true,
+                    confirmButtonText: 'Enviar nueva contraseña',
+                    cancelButtonText: 'Cancelar'
+                });
+
+                if (email) {
+                    Swal.fire({ title: 'Enviando...', didOpen: () => { Swal.showLoading(); } });
+
+                    try {
+                        const res = await fetch(API_URL + '?action=forgot_password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: email })
+                        });
+                        const data = await res.json();
+
+                        if (data.success) {
+                            Swal.fire('¡Enviado!', data.message, 'success');
+                        } else {
+                            Swal.fire('Error', data.error || 'No se pudo procesar la solicitud', 'error');
+                        }
+                    } catch (err) {
+                        Swal.fire('Error', 'Error de comunicación con el servidor', 'error');
+                    }
+                }
+            }
         </script>
     </body>
     </html>
@@ -189,6 +273,8 @@ if (!isset($_SESSION['user_id'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Quill.js for Rich Text Editing -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
@@ -1203,6 +1289,14 @@ if (!isset($_SESSION['user_id'])) {
                                     <label class="form-label">Columnas a Sumar (Separadas por coma)</label>
                                     <input type="text" class="form-control" id="editSumCols" placeholder="Ej: Total, Subtotal">
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Encabezado Personalizado (Elegante)</label>
+                                    <div id="editorPrintHeader" style="height: 150px; background: white;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Pie de Página Personalizado (Elegante)</label>
+                                    <div id="editorPrintFooter" style="height: 150px; background: white;"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-12 mt-2">
@@ -1652,6 +1746,8 @@ if (!isset($_SESSION['user_id'])) {
 <script src="assets/js/actions.js"></script>
 <script src="assets/js/users.js"></script>
 <script src="assets/js/logs.js"></script>
+<!-- Quill.js for Rich Text Editing -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <!-- SheetJS -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 

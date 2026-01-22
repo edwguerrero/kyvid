@@ -46,6 +46,8 @@ let currentReportId = null;
 let currentFilters = {};
 let currentPivotData = null;
 let lastPivotConfig = null;
+let quillHeader = null;
+let quillFooter = null;
 
 // Robot Synchronization Constants & State
 const ROBOT_STATE_KEY = 'robot_active_state';
@@ -69,6 +71,7 @@ $(document).ready(function () {
     loadReports();
     checkAdminStatus();
     initRobotSync();
+    initRichEditors();
 
     // Accordion handling
     $('#filterBody, #chartBody').on('show.bs.collapse', function () {
@@ -114,6 +117,8 @@ $(document).ready(function () {
         $('#editorForm')[0].reset();
         $('#editId').val('');
         $('#editPhp2').val('');
+        if (quillHeader) quillHeader.setContents([]);
+        if (quillFooter) quillFooter.setContents([]);
         $('#editorModalLabel').text('Nuevo Reporte');
         $('#btnAiAssist').html('<i class="bi bi-stars"></i> Asistente IA (Generar SQL)');
         new bootstrap.Modal('#editorModal').show();
@@ -136,6 +141,9 @@ $(document).ready(function () {
         $('#editCronInterval').val(rep.cron_interval_minutes || 60);
         $('#editIsView').prop('checked', parseInt(rep.is_view) === 1);
         $('#editIsActive').prop('checked', parseInt(rep.is_active) === 1);
+
+        if (quillHeader) quillHeader.root.innerHTML = rep.print_header || '';
+        if (quillFooter) quillFooter.root.innerHTML = rep.print_footer || '';
 
         // Grouping & Chart fields
         let groupCfg = { groupCol: '', sumCols: '', chartLabelCol: '', chartValueCol: '' };
@@ -596,6 +604,7 @@ function renderTable(response) {
                 className: 'btn btn-danger btn-sm',
                 title: report.name || 'Reporte',
                 messageTop: function () {
+                    const report = reportsCache[currentReportId] || {};
                     const now = new Date();
                     const timestamp = now.getFullYear().toString() +
                         (now.getMonth() + 1).toString().padStart(2, '0') +
@@ -603,7 +612,18 @@ function renderTable(response) {
                         now.getHours().toString().padStart(2, '0') +
                         now.getMinutes().toString().padStart(2, '0');
                     const auditCode = murcielagoCipher(timestamp);
-                    return 'ID Reporte: ' + currentReportId + ' | Verificación: ' + auditCode + ' | Generado: ' + now.toLocaleString();
+                    let msg = 'ID Reporte: ' + currentReportId + ' | Verificación: ' + auditCode + ' | Generado: ' + now.toLocaleString();
+
+                    if (report.print_header) {
+                        // Stripping HTML for PDF because pdfmake doesn't support it directly
+                        const headerText = report.print_header.replace(/<[^>]*>/g, '');
+                        msg = headerText + "\n\n" + msg;
+                    }
+                    return msg;
+                },
+                messageBottom: function () {
+                    const report = reportsCache[currentReportId] || {};
+                    return report.print_footer ? report.print_footer.replace(/<[^>]*>/g, '') : null;
                 },
                 exportOptions: {
                     footer: true,
@@ -689,6 +709,7 @@ function renderTable(response) {
                 title: report.name || 'Reporte',
                 title: report.name || 'Reporte',
                 messageTop: function () {
+                    const report = reportsCache[currentReportId] || {};
                     const now = new Date();
                     const timestamp = now.getFullYear().toString() +
                         (now.getMonth() + 1).toString().padStart(2, '0') +
@@ -696,7 +717,15 @@ function renderTable(response) {
                         now.getHours().toString().padStart(2, '0') +
                         now.getMinutes().toString().padStart(2, '0');
                     const auditCode = murcielagoCipher(timestamp);
-                    return '<div class="text-center text-muted mb-3"><small>ID Reporte: ' + currentReportId + ' | Verificación: ' + auditCode + ' | Generado: ' + now.toLocaleString() + '</small></div>';
+                    let header = '';
+                    if (report.print_header) {
+                        header = `<div class="report-custom-header mb-4">${report.print_header}</div>`;
+                    }
+                    return header + '<div class="text-center text-muted mb-3"><small>ID Reporte: ' + currentReportId + ' | Verificación: ' + auditCode + ' | Generado: ' + now.toLocaleString() + '</small></div>';
+                },
+                messageBottom: function () {
+                    const report = reportsCache[currentReportId] || {};
+                    return report.print_footer ? `<div class="report-custom-footer mt-4 pt-3 border-top">${report.print_footer}</div>` : null;
                 },
                 exportOptions: {
                     footer: true,
@@ -951,6 +980,8 @@ function saveReport() {
     data.is_view = $('#editIsView').is(':checked') ? 1 : 0;
     data.is_active = $('#editIsActive').is(':checked') ? 1 : 0;
     data.cron_interval_minutes = $('#editCronInterval').val() || 60;
+    data.print_header = quillHeader ? quillHeader.root.innerHTML : '';
+    data.print_footer = quillFooter ? quillFooter.root.innerHTML : '';
 
     const aclArray = $('#editAclView').val().split(',').map(s => s.trim()).filter(s => s !== '');
     data.acl_view = aclArray.length > 0 ? JSON.stringify(aclArray) : null;
@@ -1671,4 +1702,30 @@ function loadSharedReport(token) {
             Swal.fire('Error', resp.error, 'error');
         }
     });
+}
+
+function initRichEditors() {
+    const toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'align': [] }],
+        [{ 'header': [1, 2, 3, false] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['link', 'image'],
+        ['clean']
+    ];
+
+    if (document.getElementById('editorPrintHeader')) {
+        quillHeader = new Quill('#editorPrintHeader', {
+            modules: { toolbar: toolbarOptions },
+            theme: 'snow'
+        });
+    }
+
+    if (document.getElementById('editorPrintFooter')) {
+        quillFooter = new Quill('#editorPrintFooter', {
+            modules: { toolbar: toolbarOptions },
+            theme: 'snow'
+        });
+    }
 }

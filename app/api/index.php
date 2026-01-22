@@ -129,7 +129,7 @@ try {
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS auth_accounts (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            code VARCHAR(20) UNIQUE NOT NULL,
+            code VARCHAR(100) UNIQUE NOT NULL,
             name VARCHAR(100) NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
             role VARCHAR(20) DEFAULT 'viewer',
@@ -635,6 +635,8 @@ if ($action === 'save') {
     $is_automatic = isset($input['is_automatic']) ? (int)$input['is_automatic'] : 0;
     $cron_interval_minutes = isset($input['cron_interval_minutes']) ? (int)$input['cron_interval_minutes'] : 60;
     $acl_view = $input['acl_view'] ?? null;
+    $print_header = $input['print_header'] ?? null;
+    $print_footer = $input['print_footer'] ?? null;
 
     if (empty($code) || empty($category) || empty($name) || empty($sql_query)) {
         echo json_encode(['success' => false, 'error' => 'Code, Category, Name and SQL are required']);
@@ -652,12 +654,12 @@ if ($action === 'save') {
     try {
         if ($id) {
             // Update
-            $stmt = $pdo->prepare("UPDATE reports SET code=?, category=?, name=?, description=?, sql_query=?, php_script=?, columns_json=?, parameters_json=?, grouping_config=?, phpscript2=?, post_action_code=?, post_action_params=?, is_automatic=?, cron_interval_minutes=?, connection_id=?, is_view=?, is_active=?, acl_view=? WHERE id=?");
-            $stmt->execute([$code, $category, $name, $description, $sql_query, $php_script, $columns_json, $parameters_json, $grouping_config, $phpscript2, $post_action_code, $post_action_params, $is_automatic, $cron_interval_minutes, $connectionId, $is_view, $is_active, $acl_view, $id]);
+            $stmt = $pdo->prepare("UPDATE reports SET code=?, category=?, name=?, description=?, sql_query=?, php_script=?, columns_json=?, parameters_json=?, grouping_config=?, phpscript2=?, post_action_code=?, post_action_params=?, is_automatic=?, cron_interval_minutes=?, connection_id=?, is_view=?, is_active=?, acl_view=?, print_header=?, print_footer=? WHERE id=?");
+            $stmt->execute([$code, $category, $name, $description, $sql_query, $php_script, $columns_json, $parameters_json, $grouping_config, $phpscript2, $post_action_code, $post_action_params, $is_automatic, $cron_interval_minutes, $connectionId, $is_view, $is_active, $acl_view, $print_header, $print_footer, $id]);
         } else {
             // Insert
-            $stmt = $pdo->prepare("INSERT INTO reports (code, category, name, description, sql_query, php_script, columns_json, parameters_json, grouping_config, phpscript2, post_action_code, post_action_params, is_automatic, cron_interval_minutes, connection_id, is_view, is_active, acl_view) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$code, $category, $name, $description, $sql_query, $php_script, $columns_json, $parameters_json, $grouping_config, $phpscript2, $post_action_code, $post_action_params, $is_automatic, $cron_interval_minutes, $connectionId, $is_view, $is_active, $acl_view]);
+            $stmt = $pdo->prepare("INSERT INTO reports (code, category, name, description, sql_query, php_script, columns_json, parameters_json, grouping_config, phpscript2, post_action_code, post_action_params, is_automatic, cron_interval_minutes, connection_id, is_view, is_active, acl_view, print_header, print_footer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$code, $category, $name, $description, $sql_query, $php_script, $columns_json, $parameters_json, $grouping_config, $phpscript2, $post_action_code, $post_action_params, $is_automatic, $cron_interval_minutes, $connectionId, $is_view, $is_active, $acl_view, $print_header, $print_footer]);
         }
         echo json_encode(['success' => true]);
     } catch (Throwable $e) {

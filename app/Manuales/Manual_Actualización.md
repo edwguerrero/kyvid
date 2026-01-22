@@ -9,10 +9,10 @@ Usa estos comandos si has realizado cambios en el código PHP, archivos CSS/JS o
 
 ```powershell
 # 1. Detener los servicios actuales
-docker compose down
+docker compose down -v
 
 # 2. Eliminar la imagen de la aplicación para forzar reconstrucción
-docker rmi kyvid_app
+docker rmi kyvid-kyvid-app  
 
 # 3. (Opcional) Eliminar la imagen de MySQL para refrescarla
 docker rmi mysql:8.0

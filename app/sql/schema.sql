@@ -27,6 +27,8 @@ CREATE TABLE `reports` (
   `is_view` tinyint(1) DEFAULT 0 COMMENT '1: Treat as Virtual View component',
   `post_action_code` varchar(50) DEFAULT NULL COMMENT 'Code of the custom function to run',
   `post_action_params` json DEFAULT NULL COMMENT 'JSON parameters for the custom function',
+  `print_header` text DEFAULT NULL COMMENT 'HTML content for report header',
+  `print_footer` text DEFAULT NULL COMMENT 'HTML content for report footer',
   `is_active` tinyint(1) DEFAULT 1 COMMENT '1: Visible, 0: Hidden',
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -258,7 +260,7 @@ INSERT INTO `settings` (`key`, `value`) VALUES
 DROP TABLE IF EXISTS `auth_accounts`;
 CREATE TABLE `auth_accounts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `code` varchar(20) NOT NULL,
+  `code` varchar(100) NOT NULL,
   `name` varchar(100) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `role` varchar(20) DEFAULT 'viewer',
@@ -271,7 +273,7 @@ CREATE TABLE `auth_accounts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `auth_accounts` (`code`, `name`, `password_hash`, `role`) VALUES
-('admin', 'Administrador del Sistema', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'); 
+('admin', 'Administrador del Sistema', 'ADMINISTRATOR', 'admin'); 
 
 -- ----------------------------
 -- Table structure for action_logs
