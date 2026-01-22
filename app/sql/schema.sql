@@ -173,10 +173,14 @@ INSERT INTO `reports` (`id`, `code`, `category`, `name`, `description`, `sql_que
 (3, 'RPT_AUTO_EMAIL_SALES', 'Automatización', 'Reporte Diario de Ventas (Email)', 'Resumen de ventas del día que se envía automáticamente.', 'SELECT s.sale_date as Fecha, c.name as Cliente, p.name as Producto, s.total_price as Total FROM sales s JOIN customers c ON s.customer_id = c.id JOIN products p ON s.product_id = p.id WHERE s.sale_date >= CURDATE()', NULL, '["Fecha", "Cliente", "Producto", "Total"]', '[]', NULL, NULL, 0),
 (4, 'STOCK_STATUS', 'Inventario', 'Estado de Inventario', 'Muestra los productos con stock bajo (menos de 20 unidades).', 'SELECT code as Codigo, name as Producto, category as Categoria, stock as Existencias FROM products WHERE stock < 20', NULL, '["Codigo", "Producto", "Categoria", "Existencias"]', '[]', NULL, NULL, 0),
 (5, 'SALES_BY_CAT_CHART', 'Ventas', 'Ventas por Categoría (Barras)', 'Reporte optimizado para visualización de gráficos.', 'SELECT p.category as Categoria, SUM(s.total_price) as Total FROM sales s JOIN products p ON s.product_id = p.id GROUP BY p.category', NULL, '["Categoria", "Total"]', '[]', NULL, NULL, 0),
-(6, 'KPI_TOTAL_REVENUE', 'Indicadores', 'KPI: Ingresos Totales', 'Valor único de ingresos para usar en dashboards.', 'SELECT SUM(total_price) as Valor FROM sales', NULL, '["Valor"]', '[]', NULL, NULL, 0);
+(6, 'KPI_TOTAL_REVENUE', 'Indicadores', 'KPI: Ingresos Totales', 'Valor único de ingresos para usar en dashboards.', 'SELECT SUM(total_price) as Valor FROM sales', NULL, '["Valor"]', '[]', NULL, NULL, 0),
+(7, 'RPT_INTEG_N8N_SALES', 'Integración', 'Sincronizar Ventas (N8N)', 'Envía todas las ventas recientes a un webhook de n8n para procesamiento externo.', 'SELECT * FROM sales WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)', NULL, '["ID", "Cliente ID", "Producto ID", "Fecha", "Cantidad", "Total"]', '[]', NULL, NULL, 0),
+(8, 'RPT_ALERT_TELEGRAM_STOCK', 'Alertas', 'Alerta Stock Crítico (Telegram)', 'Escanea productos con stock bajo y envía una notificación detallada por Telegram.', 'SELECT name as Producto, stock as Cantidad FROM products WHERE stock < 10', NULL, '["Producto", "Cantidad"]', '[]', NULL, NULL, 0);
 
 -- Associate Post-Actions
 UPDATE reports SET post_action_code = 'UTIL_EMAIL_REPORT', post_action_params = '{"destinatario": "tu-email@ejemplo.com", "asunto": "📊 Resumen de Ventas Diario", "adjuntar_csv": true}' WHERE code = 'RPT_AUTO_EMAIL_SALES';
+UPDATE reports SET post_action_code = 'INTEG_SEND_N8N', post_action_params = '{"webhook_url": "https://n8n.tu-servidor.com/webhook/..."}' WHERE code = 'RPT_INTEG_N8N_SALES';
+UPDATE reports SET post_action_code = 'UTIL_SEND_TELEGRAM', post_action_params = '{"title": "🚨 Alerta de Inventario Bajo", "show_samples": true}' WHERE code = 'RPT_ALERT_TELEGRAM_STOCK';
 
 -- ----------------------------
 -- Seeding DB Connections (Examples)

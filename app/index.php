@@ -556,6 +556,9 @@ if (!isset($_SESSION['user_id'])) {
             <button class="btn btn-sm btn-light border-0 me-2" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar Tema">
                 <i class="bi bi-palette-fill text-primary"></i>
             </button>
+            <button class="btn btn-sm btn-light border-0 me-2" data-bs-toggle="modal" data-bs-target="#passwordChangeModal" title="Cambiar Mi Contraseña">
+                <i class="bi bi-key-fill text-primary"></i>
+            </button>
             <button class="btn btn-sm btn-light border-0" onclick="logout()" title="Cerrar Sesión">
                 <i class="bi bi-box-arrow-right text-danger"></i>
             </button>
@@ -1262,7 +1265,7 @@ if (!isset($_SESSION['user_id'])) {
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title"><i class="bi bi-key me-2"></i>Cambiar Contraseña Maestra</h5>
+                <h5 class="modal-title"><i class="bi bi-key me-2"></i>Cambiar Mi Contraseña</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

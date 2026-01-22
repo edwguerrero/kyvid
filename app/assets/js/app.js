@@ -1526,7 +1526,9 @@ function changePassword() {
         }),
         success: function (resp) {
             if (resp.success) {
-                bootstrap.Modal.getInstance(document.getElementById('passwordChangeModal')).hide();
+                const modalEl = document.getElementById('passwordChangeModal');
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.hide();
                 Swal.fire('Éxito', 'Contraseña actualizada correctamente', 'success');
             } else {
                 Swal.fire('Error', resp.error || 'No se pudo cambiar la contraseña', 'error');
