@@ -118,102 +118,120 @@ if ($action === 'save_config') {
 
 // --- GENERATE (Run AI) ---
 if ($action === 'generate') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    $userPrompt = $input['prompt'] ?? '';
-    $provider = $input['provider'] ?? 'openai';
-    $context = $input['context'] ?? ''; // context string or object
-
-    if (empty($userPrompt)) { echo json_encode(['success' => false, 'error' => 'Prompt missing']); exit; }
-
-    // Fetch Creds: If provider specified, try that first. 
-    // If not found or not specified, get the FIRST active AI connection.
-    $stmt = $pdo->prepare("SELECT * FROM connections WHERE type='AI' AND (provider=? OR 1=1) AND is_active=1 ORDER BY (provider=?) DESC LIMIT 1");
-    $stmt->execute([$provider, $provider]);
-    $conn = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$conn) {
-        echo json_encode(['success' => false, 'error' => "No hay ningún servicio de IA configurado y activo en el panel de Conexiones."]);
-        exit;
-    }
-
-    // Update variables based on actual provider found
-    $provider = $conn['provider'];
-    $config = json_decode($conn['config_json'], true);
-    $creds = json_decode(Security::decrypt($conn['encrypted_creds']), true);
-    $apiKey = $creds['api_key'] ?? '';
-    
-    $model = $config['model'] ?? '';
-    $baseUrl = $config['base_url'] ?? '';
-    
-    // 4. Inyectar SCHEMA REAL de la base de datos seleccionada
-    $schemaContext = "";
     try {
-        $activeConnStmt = $pdo->query("SELECT * FROM db_connections WHERE is_active = 1 LIMIT 1");
-        $activeConn = $activeConnStmt->fetch();
-        
-        $targetPdo = $pdo; // Por defecto local
-        if ($activeConn) {
-            $decPass = Security::decrypt($activeConn['password_encrypted']);
-            $dsn = "mysql:host={$activeConn['host']};port={$activeConn['port']};dbname={$activeConn['database_name']};charset=utf8mb4";
-            $targetPdo = new PDO($dsn, $activeConn['username'], $decPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $userPrompt = $input['prompt'] ?? '';
+        $provider = $input['provider'] ?? 'openai';
+        $context = $input['context'] ?? ''; 
+
+        if (empty($userPrompt)) {
+            echo json_encode(['success' => false, 'error' => 'Prompt missing']);
+            exit;
         }
 
-        // Obtener tablas y columnas
-        $tables = $targetPdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
-        $schemaContext = "ESTRUCTURA DE LA BASE DE DATOS (Usa SOLO estas tablas):\n";
-        foreach ($tables as $table) {
-            $cols = $targetPdo->query("DESCRIBE `$table`")->fetchAll(PDO::FETCH_COLUMN);
-            $schemaContext .= "- Tabla `$table`: (" . implode(', ', $cols) . ")\n";
+        // Fetch Creds
+        $stmt = $pdo->prepare("SELECT * FROM connections WHERE type='AI' AND (provider=? OR 1=1) AND is_active=1 ORDER BY (provider=?) DESC LIMIT 1");
+        $stmt->execute([$provider, $provider]);
+        $conn = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$conn) {
+            echo json_encode(['success' => false, 'error' => "No hay ningún servicio de IA configurado y activo en el panel de Conexiones."]);
+            exit;
         }
-    } catch (Exception $e) {
-        $schemaContext = "Error al leer schema: " . $e->getMessage();
-    }
 
-    // Elegir prompt según el modo (Generación SQL vs Análisis)
-    $mode = $input['mode'] ?? 'sql'; 
-    if ($mode === 'analysis') {
-        $systemPrompt = $config['analysis_prompt'] ?? 'Eres un analista de datos experto.';
-    } else {
-        $systemPrompt = $config['system_prompt'] ?? 'Eres un experto en SQL.';
+        $provider = $conn['provider'];
+        $config = json_decode($conn['config_json'], true);
+        $creds = json_decode(Security::decrypt($conn['encrypted_creds']), true);
+        $apiKey = $creds['api_key'] ?? '';
+        $model = $config['model'] ?? '';
+        $baseUrl = $config['base_url'] ?? '';
+
+        set_time_limit(120);
+        ini_set('memory_limit', '256M');
+
+        if (strlen($userPrompt) > 10000) $userPrompt = substr($userPrompt, 0, 10000) . "... [Truncado]";
         
-        // Agregar contexto de esquema al prompt de SQL
-        $systemPrompt .= "\n\nCONTEXTO DE BASE DE DATOS ACTUAL:\n$schemaContext";
+        // Build separate Doc and Schema strings
+        $userDocs = "";
+        $realSchema = "";
 
-        // Refuerzo invisible para asegurar que el JSON tenga la estructura que espera la app
-        $systemPrompt .= "\n\nIMPORTANTE: Tu respuesta DEBE ser un objeto JSON válido con estas llaves exactas: 
-        'name' (string), 'description' (string), 
-        'sql_query' (string SQL - DEBE ser SQL puro SIN placeholders como '?' o ':param'. Escribe la consulta base, el sistema añadirá los filtros automáticamente), 
-        'columns_json' (array de strings de nombres de columnas), 
-        'parameters_json' (array de objetos con field, label, type), 
-        'php_script' (string opcional).";
-    }
+        try {
+            $conns = $pdo->query("SELECT id, name, type, host, port, database_name, database_schema, username, password_encrypted, ai_context, user_context, ai_conclusions, ai_technical_context FROM db_connections WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($conns as $conn) {
+                $cName = $conn['name'];
+                $cSchema = $conn['database_schema'] ?? 'public';
+                
+                // Documentation (Intent)
+                $userDocs .= "\n--- DICCIONARIO DE NEGOCIO ($cName) ---\n";
+                if(!empty($conn['user_context'])) $userDocs .= "[Manual Usuario]: " . substr($conn['user_context'], 0, 3000) . "\n";
+                if(!empty($conn['ai_conclusions'])) $userDocs .= "[Analisis de IA]: " . $conn['ai_conclusions'] . "\n";
+                if(!empty($conn['ai_technical_context'])) $userDocs .= "[Guia de Joins]: " . $conn['ai_technical_context'] . "\n";
+                $userDocs .= "--------------------------------------\n";
 
-    // ... (Here goes the implementation of calling APIs: OpenAI, Gemini, etc.)
-    // ... (For brevity, I will copy the previous logic but updated with these variables)
-    
-    // Simplification for the example:
-    try {
-        $responseText = "Simulated Response from $provider (Model: $model). \nPrompt was: $userPrompt";
-        
-        if ($provider === 'gemini') {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=$apiKey";
-            $payload = [ "contents" => [ [ "parts" => [ [ "text" => $systemPrompt . "\nUser: " . $userPrompt ] ] ] ] ];
-            // ... curl ...
-        } elseif ($provider === 'openai') {
-            $url = "https://api.openai.com/v1/chat/completions";
-             $payload = [
-                "model" => $model,
-                "messages" => [
-                    ["role" => "system", "content" => $systemPrompt],
-                    ["role" => "user", "content" => $userPrompt]
-                ]
-            ];
-            // ... curl ...
+                // Physical Schema (Reality)
+                try {
+                    $dbPass = Security::decrypt($conn['password_encrypted']);
+                    $dsn = ($conn['type'] === 'pgsql')
+                        ? "pgsql:host={$conn['host']};port={$conn['port']};dbname={$conn['database_name']}"
+                        : "mysql:host={$conn['host']};port={$conn['port']};dbname={$conn['database_name']};charset=utf8mb4";
+                    
+                    $extPdo = new PDO($dsn, $conn['username'], $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5]);
+                    
+                    if ($conn['type'] === 'pgsql') {
+                         $qTables = "SELECT relname as tname, n_live_tup as rcount FROM pg_stat_user_tables WHERE schemaname = '$cSchema' AND n_live_tup > 2 ORDER BY n_live_tup DESC LIMIT 50";
+                         $activeTables = $extPdo->query($qTables)->fetchAll(PDO::FETCH_ASSOC);
+                         foreach ($activeTables as $ta) {
+                             $t = $ta['tname'];
+                             $qCols = "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = '$cSchema' AND table_name = '$t' LIMIT 30";
+                             $cols = $extPdo->query($qCols)->fetchAll(PDO::FETCH_ASSOC);
+                             $colStr = implode(', ', array_map(fn($c) => "{$c['column_name']} ({$c['data_type']})", $cols));
+                             $realSchema .= "- TABLA REAL: $t ({$ta['rcount']} filas) -> Columnas: $colStr\n";
+                         }
+                    } else {
+                         $dbName = $conn['database_name'];
+                         $qTables = "SELECT TABLE_NAME as tname, TABLE_ROWS as rcount FROM information_schema.tables WHERE TABLE_SCHEMA = '$dbName' AND TABLE_ROWS > 2 ORDER BY TABLE_ROWS DESC LIMIT 50";
+                         $activeTables = $extPdo->query($qTables)->fetchAll(PDO::FETCH_ASSOC);
+                         if (empty($activeTables)) {
+                            $activeTables = $extPdo->query("SELECT TABLE_NAME as tname, TABLE_ROWS as rcount FROM information_schema.tables WHERE TABLE_SCHEMA = '$dbName' LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+                         }
+                         foreach ($activeTables as $ta) {
+                             $t = $ta['tname'];
+                             try {
+                                $cols = $extPdo->query("SHOW COLUMNS FROM `$t`")->fetchAll(PDO::FETCH_ASSOC);
+                                $colStr = implode(', ', array_map(fn($c) => array_change_key_case($c, CASE_LOWER)['field'] . " (" . array_change_key_case($c, CASE_LOWER)['type'] . ")", array_slice($cols, 0, 30)));
+                                $realSchema .= "- TABLA REAL: $t ({$ta['rcount']} filas) -> Columnas: $colStr\n";
+                             } catch (Throwable $ignore) {}
+                         }
+                    }
+                } catch (Throwable $ex) { $realSchema .= "- Error conectando a $cName: " . $ex->getMessage() . "\n"; }
+            }
+        } catch (Throwable $e) { }
+
+        $mode = $input['mode'] ?? 'sql'; 
+        if ($mode === 'analysis') {
+            $systemPrompt = $config['analysis_prompt'] ?? 'Eres un analista experto.';
+        } else {
+            $systemPrompt = "Eres un Experto en SQL sobre bases de datos HEREDADAS con nombres técnicos crípticos.
+            
+            REGLA DE ORO DE NOMENCLATURA:
+            La 'DOCUMENTACIÓN DE NEGOCIO' usa nombres humanos (ej: Factura, Cliente), pero el 'ESQUEMA FÍSICO REAL' usa nombres técnicos (ej: mngmcn, vinculado). 
+            NUNCA uses nombres de la documentación en el SQL. DEBES mapear el concepto humano al nombre técnico real.
+            
+            MAPEO DETECTADO (CRÍTICO):
+            - Si te piden 'Facturas/Ventas/Facturación', busca tablas como 'mngmcn', 'transacciones' o similares.
+            - Si te piden 'Clientes/Terceros', busca tablas como 'vinculado', 'sujetos' o similares.
+            
+            PASOS PARA GENERAR EL SQL:
+            1. Identifica qué tablas de la sección 'ESQUEMA FÍSICO REAL' tienen más registros y columnas compatibles con la solicitud.
+            2. Cruza con la 'DOCUMENTACIÓN' para confirmar la lógica (joins, filtros).
+            3. Escribe el SQL usando ÚNICAMENTE los nombres de la sección 'ESQUEMA FÍSICO REAL'.";
+
+            $systemPrompt .= "\n\n[[ DOCUMENTACIÓN DE NEGOCIO (Conceptos y Lógica) ]]\n$userDocs";
+            $systemPrompt .= "\n\n[[ ESQUEMA FÍSICO REAL (Únicos Nombres Válidos para SQL) ]]\n$realSchema";
+            $systemPrompt .= "\n\nRespuesta JSON: {name, description, sql_query, columns_json, parameters_json}";
         }
-        
-        // Return dummy for now as the actual curl logic is long and redundant to re-write fully here unless requested.
-        // But user asked for configuration to be fetched from module.
-        // I will implement the CURL call for real.
+
+        if (empty($apiKey)) throw new Exception("API Key faltante.");
         
         $response = callAiApi($provider, $apiKey, $baseUrl, $model, $systemPrompt, $userPrompt);
         
@@ -222,46 +240,36 @@ if ($action === 'generate') {
         } else {
              $content = $response['content'];
              $jsonContent = null;
-             
-             // UNIFICADO: Extracción Robusta de JSON
-             // 1. Intentar con bloques Markdown
              if (preg_match('/```(?:json)?\s*(\{.*?\})\s*```/s', $content, $matches)) {
                  $jsonContent = json_decode(trim($matches[1]), true);
              } 
-             
-             // 2. Si falló, intentar buscar el primer { y el último }
              if (!$jsonContent) {
-                 $start = strpos($content, '{');
-                 $end = strrpos($content, '}');
+                 $start = strpos($content, '{'); $end = strrpos($content, '}');
                  if ($start !== false && $end !== false) {
-                     $jsonString = substr($content, $start, $end - $start + 1);
-                     $jsonContent = json_decode($jsonString, true);
+                     $jsonContent = json_decode(substr($content, $start, $end - $start + 1), true);
                  }
              }
-
-             // 3. Si sigue siendo nulo, es texto plano
              if (!$jsonContent) {
-                 // Si es modo análisis, a veces el texto plano ES lo que queremos
-                 if ($mode === 'analysis') {
-                     $jsonContent = ['description' => $content];
-                 } else {
-                     $jsonContent = ['raw_text' => $content];
-                 }
+                 $jsonContent = ($mode === 'analysis') ? ['description' => $content] : ['raw_text' => $content];
              }
-
              echo json_encode(['success' => true, 'data' => $jsonContent]);
         }
-        
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['success' => false, 'error' => 'Fallo Motor IA: ' . $e->getMessage()]);
     }
     exit;
 }
 
 function callAiApi($provider, $apiKey, $baseUrl, $model, $sys, $user) {
+    $data = [];
+    $headers = [];
+    $url = "";
+
     if ($provider === 'gemini') {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-        $data = ["contents" => [["parts" => [["text" => $sys . "\n" . $user]]]]];
+        // Reinforce JSON for Gemini via prompt since it doesn't support response_format well in this endpoint
+        $fullUser = $user . "\n\nResponde estrictamente en formato JSON válido.";
+        $data = ["contents" => [["parts" => [["text" => $sys . "\n" . $fullUser]]]]];
         $headers = ["Content-Type: application/json"];
     } elseif ($provider === 'anthropic') {
         $url = "https://api.anthropic.com/v1/messages";
@@ -271,26 +279,19 @@ function callAiApi($provider, $apiKey, $baseUrl, $model, $sys, $user) {
             "system" => $sys,
             "messages" => [["role" => "user", "content" => $user]]
         ];
-        $headers = [
-            "x-api-key: $apiKey",
-            "anthropic-version: 2023-06-01",
-            "Content-Type: application/json"
-        ];
-    } elseif ($provider === 'openai' || $provider === 'deepseek' || $provider === 'groq' || $provider === 'local') {
+        $headers = ["x-api-key: $apiKey", "anthropic-version: 2023-06-01", "Content-Type: application/json"];
+    } else {
+        // OpenAI / DeepSeek / Compatible
         $url = ($baseUrl ?: "https://api.openai.com/v1") . "/chat/completions";
         $data = [
             "model" => $model,
-            "messages" => [
-                ["role" => "system", "content" => $sys],
-                ["role" => "user", "content" => $user]
-            ]
+            "messages" => [["role" => "system", "content" => $sys], ["role" => "user", "content" => $user]]
         ];
-        $headers = [
-            "Content-Type: application/json",
-            "Authorization: Bearer $apiKey"
-        ];
-    } else {
-        return ['error' => "Provider $provider not supported"];
+        // Only set json_object if strictly requested and supported
+        if (strpos($sys, 'JSON') !== false && !in_array($provider, ['deepseek-reasoner'])) {
+            $data['response_format'] = ['type' => 'json_object'];
+        }
+        $headers = ["Content-Type: application/json", "Authorization: Bearer $apiKey"];
     }
 
     $ch = curl_init($url);
@@ -298,23 +299,35 @@ function callAiApi($provider, $apiKey, $baseUrl, $model, $sys, $user) {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 120);
     
     $res = curl_exec($ch);
-    if (curl_errno($ch)) return ['error' => 'Curl: ' . curl_error($ch)];
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_errno($ch) ? curl_error($ch) : null;
     curl_close($ch);
+    
+    if ($curlErr) return ['error' => 'CURL Exception: ' . $curlErr];
     
     $json = json_decode($res, true);
     
-    // Extract content
+    if ($httpCode >= 400) {
+        $msg = $json['error']['message'] ?? ($json['error'] ?? '');
+        if (empty($msg)) $msg = "Respuesta vacía o error de red (HTTP $httpCode). Verifique API Key y cuota.";
+        if (is_array($msg)) $msg = json_encode($msg);
+        return ['error' => "IA ($provider | HTTP $httpCode): " . substr($msg, 0, 300)];
+    }
+
     $content = '';
-    if (isset($json['candidates'][0]['content']['parts'][0]['text'])) { // Gemini
+    if (isset($json['candidates'][0]['content']['parts'][0]['text'])) { 
         $content = $json['candidates'][0]['content']['parts'][0]['text'];
-    } elseif (isset($json['choices'][0]['message']['content'])) { // OpenAI-like
+    } elseif (isset($json['choices'][0]['message']['content'])) { 
         $content = $json['choices'][0]['message']['content'];
-    } elseif (isset($json['content'][0]['text'])) { // Anthropic
+    } elseif (isset($json['content'][0]['text'])) { 
         $content = $json['content'][0]['text'];
     } else {
-        return ['error' => 'Unknown response: ' . substr($res, 0, 200)];
+        return ['error' => "Error en Estructura IA: No se encontró contenido en el JSON de respuesta. Raw: " . substr($res, 0, 100)];
     }
     
     return ['content' => $content];

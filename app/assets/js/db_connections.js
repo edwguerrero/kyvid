@@ -101,10 +101,16 @@ const DbConnectionsManager = {
         $('#dbConnHost').val(data.host);
         $('#dbConnPort').val(data.port);
         $('#dbConnDbName').val(data.database_name);
-        $('#dbConnSchema').val(data.database_schema);
+        $('#dbConnSchema').val(data.database_schema || '');
         $('#dbConnUser').val(data.username);
         $('#dbConnPass').val(''); // Clear pass for security
         $('#dbConnIsActive').prop('checked', data.is_active == 1);
+
+        // Multi-context fields
+        $('#dbConnUserContext').val(data.user_context || '');
+        $('#dbConnAiConclusions').val(data.ai_conclusions || '');
+        $('#dbConnAiTechContext').val(data.ai_technical_context || '');
+
         $('#dbConnModal').modal('show');
     },
 
@@ -119,7 +125,12 @@ const DbConnectionsManager = {
             database_schema: $('#dbConnSchema').val(),
             username: $('#dbConnUser').val(),
             password: $('#dbConnPass').val(),
-            is_active: $('#dbConnIsActive').is(':checked') ? 1 : 0
+            is_active: $('#dbConnIsActive').is(':checked') ? 1 : 0,
+
+            // New fields
+            user_context: $('#dbConnUserContext').val(),
+            ai_conclusions: $('#dbConnAiConclusions').val(),
+            ai_technical_context: $('#dbConnAiTechContext').val()
         };
 
         $.ajax({
@@ -135,6 +146,65 @@ const DbConnectionsManager = {
                 } else {
                     Swal.fire('Error', resp.error, 'error');
                 }
+            }
+        });
+    },
+
+    analyzeContext: function () {
+        const id = $('#dbConnId').val();
+        if (!id) {
+            Swal.fire('Atención', 'Primero debes guardar la conexión para poder analizarla.', 'warning');
+            return;
+        }
+
+        const currentUserContext = $('#dbConnUserContext').val();
+
+        Swal.fire({
+            title: 'Analizando con IA...',
+            html: 'Estamos explorando la base de datos para generar un contexto optimizado.<br>Esto puede tomar unos segundos.',
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        $.ajax({
+            url: this.API_URL + '?action=analyze_schema_context',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                connection_id: id,
+                user_context: currentUserContext
+            }),
+            success: (resp) => {
+                Swal.close();
+                if (resp.success) {
+                    // Update the fields with AI response
+                    // Technical context might be returned as string or object, ensure string
+                    const tech = typeof resp.data.ai_technical_context === 'string'
+                        ? resp.data.ai_technical_context
+                        : JSON.stringify(resp.data.ai_technical_context, null, 2);
+
+                    const conc = resp.data.ai_conclusions;
+
+                    Swal.fire({
+                        title: 'Análisis Exitoso',
+                        text: 'La IA ha generado conclusiones y un contexto técnico optimizado. ¿Deseas aplicarlos a los campos correspondientes?',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, aplicar',
+                        cancelButtonText: 'Revisar primero'
+                    }).then((r) => {
+                        if (r.isConfirmed) {
+                            $('#dbConnAiConclusions').val(conc);
+                            $('#dbConnAiTechContext').val(tech);
+                        }
+                    });
+
+                } else {
+                    Swal.fire('Error', resp.error || 'No se pudo analizar.', 'error');
+                }
+            },
+            error: () => {
+                Swal.close();
+                Swal.fire('Error', 'Fallo de conexión con el servidor.', 'error');
             }
         });
     },

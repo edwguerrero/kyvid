@@ -436,20 +436,26 @@ function renderTable(response) {
         const firstRow = response.data[0];
         const keys = Object.keys(firstRow);
 
-        // Validation: Mismatch Check
+        // Auto-fix: If mismatch, use SQL columns
         if (keys.length !== columns.length) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Desajuste de Columnas',
-                html: `
-                    <p>La consulta SQL devolvió <b>${keys.length}</b> columnas, pero definiste <b>${columns.length}</b> encabezados.</p>
-                    <ul class="text-start small">
-                        <li><strong>SQL (Datos):</strong> ${keys.join(', ')}</li>
-                        <li><strong>Definición (Headers):</strong> ${columns.join(', ')}</li>
-                    </ul>
-                    <p class="mb-0">Corrige la configuración del reporte.</p>
-                `
-            });
+            console.warn(`Column mismatch detected. Defined: ${columns.length}, Returned: ${keys.length}. Using returned columns.`);
+
+            // Rebuild Headers
+            headerRow.empty();
+            keys.forEach(k => headerRow.append(`<th>${k}</th>`));
+
+            // Rebuild Footer
+            const footer = $('#tableFooter').empty();
+            const footerRow = $('<tr/>');
+            keys.forEach(() => footerRow.append('<th></th>'));
+            footer.append(footerRow);
+
+            // Update local columns reference for further usage (Grouping/Sorting)
+            // Note: We cannot easily update the 'response.columns' property effectively inside this scope for the Button export 
+            // without modifying the response object itself if we were passing it around, but for local rendering this is enough.
+            // We'll update the 'columns' variable used in the closure.
+            columns.length = 0;
+            keys.forEach(k => columns.push(k));
         }
 
         const formatQty = (val) => {
@@ -890,7 +896,8 @@ function renderChart(data, columns) {
     }
     if (dataIndex === -1) {
         for (let i = firstRowValues.length - 1; i >= 0; i--) {
-            if (!isNaN(parseFloat(firstRowValues[i])) && isFinite(firstRowValues[i]) && columns[i].toLowerCase() !== 'id') {
+            const colName = String(columns[i] || '');
+            if (!isNaN(parseFloat(firstRowValues[i])) && isFinite(firstRowValues[i]) && colName.toLowerCase() !== 'id') {
                 dataIndex = i;
                 break;
             }
@@ -908,8 +915,8 @@ function renderChart(data, columns) {
     if (labelIndex === -1) {
         const descriptiveKeywords = ['nombre', 'name', 'producto', 'product', 'cliente', 'customer', 'descripcion', 'description', 'categoria', 'category'];
         for (let i = 0; i < columns.length; i++) {
-            const colLower = columns[i].toLowerCase();
-            if (descriptiveKeywords.some(kw => colLower.includes(kw))) {
+            const colName = String(columns[i] || '').toLowerCase();
+            if (descriptiveKeywords.some(kw => colName.includes(kw))) {
                 labelIndex = i;
                 break;
             }
@@ -965,6 +972,18 @@ function saveReport() {
     let data = {};
     const form = $('#editorForm').serializeArray();
     form.forEach(item => data[item.name] = item.value);
+
+    // Basic Frontend Validation
+    if (!data.code || !data.name || !data.sql_query) {
+        let missing = [];
+        if (!data.code) missing.push("Código");
+        if (!data.name) missing.push("Nombre");
+        if (!data.sql_query) missing.push("Consulta SQL");
+        Swal.fire('Campos requeridos', 'Por favor complete los siguientes campos: ' + missing.join(', '), 'warning');
+        return;
+    }
+
+    if (!data.category) data.category = 'General';
 
     data.grouping_config = JSON.stringify({
         groupCol: $('#editGroupCol').val(),
@@ -1052,9 +1071,14 @@ function deleteReport(id) {
                 Swal.fire('Error Interno', 'Error JS: ' + ex.message, 'error');
             }
         },
-        error: function (err) {
-            Swal.fire('Error', 'Error de conexión borrar', 'error');
-            console.error(err);
+        error: function (xhr) {
+            let msg = 'Fallo de comunicación con el servidor.';
+            if (xhr.status === 401) msg = 'Su sesión ha expirado. Por favor, recargue la página.';
+            else if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+            else if (xhr.responseText) msg = xhr.responseText.substring(0, 200);
+
+            Swal.fire('Error', msg, 'error');
+            console.error(xhr);
         }
     });
 }
@@ -1238,7 +1262,15 @@ $(document).on('click', '#btnRunAiGeneration', function () {
                     $('#editPostActionParams').val(pap);
                 }
                 Swal.fire({ icon: 'success', title: 'Generado', text: 'Reporte generado/editado por IA.' });
-            } else Swal.fire('Error IA', resp.error, 'error');
+            } else {
+                Swal.fire('Error IA', resp.error || 'Respuesta fallida del servidor.', 'error');
+            }
+        },
+        error: function (xhr) {
+            let msg = 'Fallo de comunicación con el servidor.';
+            if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+            else if (xhr.responseText) msg = xhr.responseText.substring(0, 200);
+            Swal.fire('Error de Sistema', msg, 'error');
         },
         complete: function () { btn.prop('disabled', false).html(originalText); }
     });
@@ -1728,4 +1760,27 @@ function initRichEditors() {
             theme: 'snow'
         });
     }
+}
+
+/**
+ * Helper to launch New Report Modal with Pre-filled SQL
+ * Called by VisualBuilder
+ */
+function createNewReportWithSQL(sql) {
+    // Open the modal 'New Report' style
+    $('#editorForm')[0].reset();
+    $('#editId').val('');
+    $('#editPhp2').val('');
+    if (quillHeader) quillHeader.setContents([]);
+    if (quillFooter) quillFooter.setContents([]);
+    $('#editorModalLabel').text('Nuevo Reporte (Visual)');
+
+    // Set SQL
+    $('#editSql').val(sql);
+
+    // Show Modal
+    new bootstrap.Modal('#editorModal').show();
+
+    // Focus on Name
+    setTimeout(() => $('#editCode').focus(), 500);
 }

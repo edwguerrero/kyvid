@@ -638,8 +638,16 @@ if ($action === 'save') {
     $print_header = $input['print_header'] ?? null;
     $print_footer = $input['print_footer'] ?? null;
 
-    if (empty($code) || empty($category) || empty($name) || empty($sql_query)) {
-        echo json_encode(['success' => false, 'error' => 'Code, Category, Name and SQL are required']);
+    // Default category if missing
+    if (empty($category)) $category = 'General';
+
+    if (empty($code) || empty($name) || empty($sql_query)) {
+        $missing = [];
+        if (empty($code)) $missing[] = 'Código';
+        if (empty($name)) $missing[] = 'Nombre';
+        if (empty($sql_query)) $missing[] = 'Consulta SQL';
+        
+        echo json_encode(['success' => false, 'error' => 'Por favor, complete los campos obligatorios: ' . implode(', ', $missing)]);
         exit;
     }
 
@@ -686,6 +694,7 @@ if ($action === 'delete') {
     } catch (Throwable $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
+    exit;
 }
 
 if ($action === 'share_save') {
@@ -707,6 +716,116 @@ if ($action === 'share_save') {
         $stmt->execute([$token, $reportId, $filters_json]);
         
         echo json_encode(['success' => true, 'token' => $token]);
+    } catch (Throwable $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'get_schema') {
+    checkAdmin();
+    // No specific connection_id needed, we fetch ALL.
+
+    $allTables = [];
+
+    // Helper function to fetch schema from a PDO instance
+    $fetchSchema = function ($pdoInstance, $dbType, $prefix, $schemaFilter = 'public', $isLocal = false) {
+        $found = [];
+        try {
+            if ($dbType === 'pgsql') {
+                $schema = $schemaFilter ?: 'public';
+                $query = "SELECT table_name, column_name, data_type 
+                          FROM information_schema.columns 
+                          WHERE table_schema = '$schema' 
+                          ORDER BY table_name, ordinal_position";
+                $rows = $pdoInstance->query($query)->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($rows as $row) {
+                    $tNameRaw = $row['table_name'];
+                    
+                    // Local Filter Rule
+                    if ($isLocal) {
+                        // Allow tb_*, tp_*, and reports.
+                        // Regex: ^(tb_|tp_|reports$)
+                        if (!preg_match('/^(tb_|tp_|reports$)/i', $tNameRaw)) {
+                            continue;
+                        }
+                    }
+
+                    $tNameDisplay = $prefix ? "$prefix $tNameRaw" : $tNameRaw;
+                    
+                    if (!isset($found[$tNameDisplay])) {
+                        $found[$tNameDisplay] = ['name' => $tNameDisplay, 'original_name' => $tNameRaw, 'columns' => []];
+                    }
+                    $found[$tNameDisplay]['columns'][] = [
+                        'name' => $row['column_name'],
+                        'type' => $row['data_type']
+                    ];
+                }
+            } else {
+                // MySQL
+                $stmt = $pdoInstance->query("SHOW TABLES");
+                $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($tables as $tName) {
+                    // Local Filter Rule
+                    if ($isLocal) {
+                        if (!preg_match('/^(tb_|tp_|reports$)/i', $tName)) {
+                            continue;
+                        }
+                    }
+
+                    $tNameDisplay = $prefix ? "$prefix $tName" : $tName;
+                    try {
+                        $cStmt = $pdoInstance->query("SHOW COLUMNS FROM `$tName`");
+                        $cols = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+                        $colData = [];
+                        foreach ($cols as $col) {
+                            $colData[] = ['name' => $col['Field'], 'type' => $col['Type']];
+                        }
+                        $found[$tNameDisplay] = ['name' => $tNameDisplay, 'original_name' => $tName, 'columns' => $colData];
+                    } catch (Exception $e) { }
+                }
+            }
+        } catch (Exception $ex) { 
+            // Silent fail
+        }
+        return array_values($found);
+    };
+
+    try {
+        // 1. Local Schema
+        // Local usually MySQL. Pass isLocal = true
+        $all = $fetchSchema($pdo, 'mysql', '[Local]', 'public', true);
+        
+        // 2. Fetch Active Connections
+        $stmt = $pdo->query("SELECT * FROM db_connections WHERE is_active = 1");
+        $conns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($conns as $conn) {
+            $cName = $conn['name'];
+            $cType = $conn['type'];
+            $cSchema = $conn['database_schema'] ?? 'public'; // Custom Schema
+            
+            // Connect
+            try {
+                $dbPass = Security::decrypt($conn['password_encrypted']);
+                $dsn = $cType === 'pgsql' 
+                    ? "pgsql:host={$conn['host']};port={$conn['port']};dbname={$conn['database_name']}"
+                    : "mysql:host={$conn['host']};port={$conn['port']};dbname={$conn['database_name']};charset=utf8mb4";
+                
+                $extPdo = new PDO($dsn, $conn['username'], $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+                
+                // Fetch and Merge
+                // isLocal = false
+                $extTables = $fetchSchema($extPdo, $cType, "[$cName]", $cSchema, false);
+                $all = array_merge($all, $extTables);
+                
+            } catch (Exception $ex) {
+            }
+        }
+        
+        echo json_encode(['success' => true, 'tables' => $all]);
+
     } catch (Throwable $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }

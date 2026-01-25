@@ -1168,147 +1168,214 @@ if (!isset($_SESSION['user_id'])) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="d-grid gap-2 mb-3">
-                    <button class="btn btn-warning text-dark font-weight-bold" type="button" id="btnAiAssist">
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-warning text-dark font-weight-bold flex-grow-1" type="button" id="btnAiAssist">
                         <i class="bi bi-stars"></i> Asistente IA (Generar SQL)
+                    </button>
+                    <button class="btn btn-info text-white font-weight-bold flex-grow-1" type="button" onclick="VisualBuilder.open()">
+                        <i class="bi bi-diagram-3-fill"></i> Diseñador Visual
                     </button>
                 </div>
                 <form id="editorForm">
                     <input type="hidden" id="editId" name="id">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Código (Único)</label>
-                            <input type="text" class="form-control" id="editCode" name="code" required>
-                        </div>
-                        <div class="mb-3 col-md-4">
-                            <label class="form-label">Categoría</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="category" id="editCategory" list="categoryOptions">
-                            </div>
-                            <datalist id="categoryOptions">
-                                <option value="Ventas">
-                                <option value="Inventario">
-                                <option value="Gerencia">
-                                <option value="Integraciones">
-                            </datalist>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-center">
-                            <div class="form-check form-switch mt-4">
-                                <input class="form-check-input" type="checkbox" value="1" name="is_view" id="editIsView">
-                                <label class="form-check-label" for="editIsView">Es Vista</label>
-                            </div>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-center">
-                            <div class="form-check form-switch mt-4">
-                                <input class="form-check-input" type="checkbox" value="1" name="is_active" id="editIsActive" checked>
-                                <label class="form-check-label" for="editIsActive">Activo</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Nombre del Reporte</label>
-                            <input type="text" class="form-control" id="editName" name="name" required>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Descripción</label>
-                            <textarea class="form-control" id="editDesc" name="description" rows="2"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" id="editIsAutomatic" name="is_automatic">
-                                <label class="form-check-label fw-bold" for="editIsAutomatic">
-                                    <i class="bi bi-robot me-1"></i> Ejecución Automática (Programada)
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Frecuencia (Minutos)</label>
-                            <input type="number" class="form-control" id="editCronInterval" name="cron_interval_minutes" min="1" value="60">
-                            <small class="text-muted">Cada cuánto tiempo el robot re-ejecuta el reporte.</small>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Consulta SQL (Base)</label>
-                            <textarea class="form-control font-monospace" id="editSql" name="sql_query" rows="5" required></textarea>
-                            <small class="text-muted">Use marcadores convencionales. Los filtros dinámicos se inyectarán.</small>
-                        </div>
-                         <div class="col-12">
-                            <label class="form-label text-danger">Script PHP (Post-Procesamiento)</label>
-                            <textarea class="form-control font-monospace" id="editPhp" name="php_script" rows="4" style="background-color: #fff5f5;"></textarea>
-                            <small class="text-muted">Ejecuta código nativo después de la consulta. Variable disponible: <code>$results</code> (array referenciado).</small>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-success"><i class="bi bi-play-circle"></i> Script PHP Post-Procesamiento (Acción)</label>
-                            <textarea class="form-control font-monospace" id="editPhp2" name="phpscript2" rows="4" style="background-color: #f0fff4;"></textarea>
-                            <small class="text-muted">Se ejecuta al presionar "Procesar" después de revisar resultados. Variables: <code>$results</code>, <code>$pdo</code>. Ej: guardar en tabla, enviar email, webhook.</small>
-                        </div>
-                        <div class="col-12 border-top pt-3 mt-3">
-                            <h6 class="text-primary fw-bold"><i class="bi bi-play-circle-fill"></i> Función Predefinida (Secure FaaS)</h6>
+                    
+                    <ul class="nav nav-tabs mb-3" id="editorTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="tab-extract-btn" data-bs-toggle="tab" data-bs-target="#tab-extract" type="button" role="tab"><i class="bi bi-database-fill-down me-2"></i>1. Extraer</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="tab-transform-btn" data-bs-toggle="tab" data-bs-target="#tab-transform" type="button" role="tab"><i class="bi bi-shuffle me-2"></i>2. Transformar</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="tab-present-btn" data-bs-toggle="tab" data-bs-target="#tab-present" type="button" role="tab"><i class="bi bi-eye-fill me-2"></i>3. Presentar</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="tab-send-btn" data-bs-toggle="tab" data-bs-target="#tab-send" type="button" role="tab"><i class="bi bi-send-fill me-2"></i>4. Enviar</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="editorTabsContent">
+                        <!-- TAB 1: EXTRAER (Datos y Metadatos) -->
+                        <div class="tab-pane fade show active" id="tab-extract" role="tabpanel">
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Ejecutar esta Función:</label>
-                                    <select class="form-select border-primary" id="editPostActionCode" name="post_action_code">
-                                        <option value="">-- Ninguna --</option>
-                                        <!-- Opciones cargadas por JS -->
-                                    </select>
-                                    <small class="text-muted">Se ejecutará después de filtrar y procesar los resultados SQL.</small>
+                                <div class="col-md-4">
+                                    <label class="form-label">Código (Único)</label>
+                                    <input type="text" class="form-control" id="editCode" name="code" required>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Parámetros de la Función (JSON)</label>
-                                    <textarea class="form-control font-monospace font-small" id="editPostActionParams" name="post_action_params" rows="3" placeholder='{ "token": "...", "chat_id": "..." }'></textarea>
+                                <div class="mb-3 col-md-4">
+                                    <label class="form-label">Categoría</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="category" id="editCategory" list="categoryOptions">
+                                    </div>
+                                    <datalist id="categoryOptions">
+                                        <option value="Ventas">
+                                        <option value="Inventario">
+                                        <option value="Gerencia">
+                                        <option value="Integraciones">
+                                    </datalist>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">JSON Columnas (Headers)</label>
-                            <textarea class="form-control font-monospace" id="editCols" name="columns_json" rows="2">[]</textarea>
-                            <small class="text-muted">Ej: ["ID", "Nombre", "Fecha"]</small>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">JSON Parámetros (Filtros)</label>
-                            <textarea class="form-control font-monospace" id="editParams" name="parameters_json" rows="4">[]</textarea>
-                            <small class="text-muted">Ej: [{"type": "date_range", "field": "fecha", "label": "Rango"}]</small>
-                        </div>
-                        <div class="col-12 bg-light p-3 rounded border">
-                            <h6 class="text-primary fw-bold mb-2"><i class="bi bi-shield-lock-fill me-2"></i>Control de Acceso (ACL)</h6>
-                            <div class="row g-2">
+                                <div class="col-md-2 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" value="1" name="is_view" id="editIsView">
+                                        <label class="form-check-label" for="editIsView">Es Vista</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" value="1" name="is_active" id="editIsActive" checked>
+                                        <label class="form-check-label" for="editIsActive">Activo</label>
+                                    </div>
+                                </div>
                                 <div class="col-md-12">
-                                    <label class="form-label small fw-bold text-uppercase">¿Quién puede ver este reporte?</label>
-                                    <input type="text" class="form-control" id="editAclView" placeholder="Ej: admin, viewer, U:jperez">
-                                    <div class="form-text small">Separa por comas. Vacío = Público para todos los registrados. (Roles: <code>admin</code>, <code>viewer</code>. Usuarios: <code>U:codigo</code>)</div>
+                                    <label class="form-label">Nombre del Reporte</label>
+                                    <input type="text" class="form-control" id="editName" name="name" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="editDesc" name="description" rows="2"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Consulta SQL (Base)</label>
+                                    <textarea class="form-control font-monospace" id="editSql" name="sql_query" rows="8" required></textarea>
+                                    <small class="text-muted">Use marcadores convencionales. Los filtros dinámicos se inyectarán.</small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">JSON Parámetros (Filtros)</label>
+                                    <textarea class="form-control font-monospace" id="editParams" name="parameters_json" rows="4">[]</textarea>
+                                    <small class="text-muted">Ej: [{"type": "date_range", "field": "fecha", "label": "Rango"}]</small>
                                 </div>
                             </div>
                         </div>
-                        <hr class="my-3">
-                        <div class="col-12">
-                            <h6 class="text-primary"><i class="bi bi-printer"></i> Configuración de Impresión / Agrupación</h6>
+
+                        <!-- TAB 2: TRANSFORMAR (Scripts PHP) -->
+                        <div class="tab-pane fade" id="tab-transform" role="tabpanel">
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Agrupar por Columna (Nombre)</label>
-                                    <input type="text" class="form-control" id="editGroupCol" placeholder="Ej: Cliente">
+                                <div class="col-12">
+                                    <div class="alert alert-light border">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Use estos scripts para manipular los datos ANTES de mostrarlos o realizar acciones manuales complejas.
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Columnas a Sumar (Separadas por coma)</label>
-                                    <input type="text" class="form-control" id="editSumCols" placeholder="Ej: Total, Subtotal">
+                                <div class="col-12">
+                                    <label class="form-label text-danger fw-bold">1. Script PHP (Post-Procesamiento de Datos)</label>
+                                    <textarea class="form-control font-monospace" id="editPhp" name="php_script" rows="6" style="background-color: #fff5f5;"></textarea>
+                                    <small class="text-muted">Ejecuta código nativo inmediatamente después de la consulta SQL. Variable disponible: <code>$results</code> (array referenciado, puede modificarlo).</small>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Encabezado Personalizado (Elegante)</label>
-                                    <div id="editorPrintHeader" style="height: 150px; background: white;"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Pie de Página Personalizado (Elegante)</label>
-                                    <div id="editorPrintFooter" style="height: 150px; background: white;"></div>
+                                <div class="col-12">
+                                    <label class="form-label text-success fw-bold"><i class="bi bi-play-circle"></i> 2. Script PHP de Acción Manual</label>
+                                    <textarea class="form-control font-monospace" id="editPhp2" name="phpscript2" rows="6" style="background-color: #f0fff4;"></textarea>
+                                    <small class="text-muted">Se ejecuta SOLO al presionar el botón "Procesar" en la vista de resultados. Ideal para actualizaciones masivas o integraciones legacy. Variables: <code>$results</code>, <code>$pdo</code>.</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 mt-2">
-                            <h6 class="text-success"><i class="bi bi-bar-chart"></i> Configuración de Gráfico</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Columna para Etiquetas (Label)</label>
-                                    <input type="text" class="form-control" id="editChartLabelCol" placeholder="Ej: Producto">
+
+                        <!-- TAB 3: PRESENTAR (Visualización, Columnas, Gráficos) -->
+                        <div class="tab-pane fade" id="tab-present" role="tabpanel">
+                             <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Definición de Columnas (Headers JSON)</label>
+                                    <textarea class="form-control font-monospace" id="editCols" name="columns_json" rows="2">[]</textarea>
+                                    <small class="text-muted">Ej: ["ID", "Nombre Cliente", "Fecha Venta"]. Dejar vacío para autodetectar.</small>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Columna para Valores (Value)</label>
-                                    <input type="text" class="form-control" id="editChartValueCol" placeholder="Ej: Total">
+                                
+                                <div class="col-12 bg-light p-3 rounded border">
+                                    <h6 class="text-primary fw-bold mb-2"><i class="bi bi-shield-lock-fill me-2"></i>Control de Acceso (ACL)</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold text-uppercase">¿Quién puede ver este reporte?</label>
+                                            <input type="text" class="form-control" id="editAclView" placeholder="Ej: admin, viewer, U:jperez">
+                                            <div class="form-text small">Separa por comas. Roles: <code>admin</code>, <code>viewer</code>. Usuarios: <code>U:codigo</code>.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <h6 class="text-primary border-bottom pb-2"><i class="bi bi-table"></i> Agrupación y Totales</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Agrupar por Columna</label>
+                                            <input type="text" class="form-control" id="editGroupCol" placeholder="Nombre exacto de columna (Ej: Cliente)">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Columnas a Sumar</label>
+                                            <input type="text" class="form-control" id="editSumCols" placeholder="Ej: Total, Subtotal (separadas por coma)">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <h6 class="text-success border-bottom pb-2"><i class="bi bi-bar-chart"></i> Gráfico Simple</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Columna para Etiquetas (Eje X)</label>
+                                            <input type="text" class="form-control" id="editChartLabelCol" placeholder="Ej: Producto">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Columna para Valores (Eje Y)</label>
+                                            <input type="text" class="form-control" id="editChartValueCol" placeholder="Ej: Total">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <h6 class="text-secondary border-bottom pb-2"><i class="bi bi-printer"></i> Impresión PDF (Cabecera/Pie)</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Encabezado HTML</label>
+                                            <div id="editorPrintHeader" style="height: 150px; background: white;"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Pie de Página HTML</label>
+                                            <div id="editorPrintFooter" style="height: 150px; background: white;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 4: ENVIAR (Automatización y Acciones) -->
+                        <div class="tab-pane fade" id="tab-send" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12 mb-4">
+                                     <h6 class="text-primary fw-bold"><i class="bi bi-robot"></i> Programación Automática (Cron)</h6>
+                                     <div class="card card-body bg-light border-0">
+                                        <div class="row g-3 align-items-center">
+                                            <div class="col-md-6">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="editIsAutomatic" name="is_automatic">
+                                                    <label class="form-check-label fw-bold" for="editIsAutomatic">
+                                                        Habilitar Ejecución Automática
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Frecuencia (Minutos)</label>
+                                                <input type="number" class="form-control" id="editCronInterval" name="cron_interval_minutes" min="1" value="60">
+                                            </div>
+                                            <div class="col-12">
+                                                <small class="text-muted">Nota: Esto requiere que el "Robot" esté activo en algún navegador o servidor.</small>
+                                            </div>
+                                        </div>
+                                     </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <h6 class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> Acción Post-Proceso (Secure FaaS)</h6>
+                                    <p class="small text-muted">Defina una acción reutilizable a ejecutar automáticamente tras la generación del reporte (Ej: Enviar Email, Webhook).</p>
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label">Función a Ejecutar:</label>
+                                            <select class="form-select border-primary" id="editPostActionCode" name="post_action_code">
+                                                <option value="">-- Ninguna --</option>
+                                                <!-- Opciones cargadas por JS -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-7">
+                                            <label class="form-label">Parámetros (JSON)</label>
+                                            <textarea class="form-control font-monospace font-small" id="editPostActionParams" name="post_action_params" rows="5" placeholder='{ "token": "...", "chat_id": "..." }'></textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1532,6 +1599,14 @@ if (!isset($_SESSION['user_id'])) {
                         <input class="form-check-input" type="checkbox" id="connIsActive" checked>
                         <label class="form-check-label" for="connIsActive">Conexión Activa</label>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-primary"><i class="bi bi-book me-1"></i> Contexto / Diccionario IA (Opcional)</label>
+                        <textarea class="form-control font-monospace" id="connAiContext" rows="5" placeholder="Describe tablas o columnas crípticas aquí. Ej: La tabla mngmcn es Movimientos Inventario. mcnclase='FV' es Factura Venta..."></textarea>
+                        <small class="text-muted d-block mt-1">
+                            Información semántica extra que se enviará a la IA para que entienda mejor esta base de datos.
+                        </small>
+                    </div>
                     
                     <hr>
                     <h6 class="text-primary mb-3">Configuración Específica</h6>
@@ -1695,6 +1770,30 @@ if (!isset($_SESSION['user_id'])) {
                         <input class="form-check-input" type="checkbox" id="dbConnIsActive">
                         <label class="form-check-label">Conexión Activa</label>
                     </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                             <h6 class="text-primary fw-bold mb-0"><i class="bi bi-robot me-1"></i> Inteligencia Artificial & Contexto</h6>
+                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="DbConnectionsManager.analyzeContext()">
+                                <i class="bi bi-stars"></i> Analizar con IA
+                             </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">1. Datos Suministrados por Usuario</label>
+                            <textarea class="form-control" id="dbConnUserContext" rows="3" placeholder="Escribe aquí lo que sepas de la base de datos (ej: mngmcn=Inventario)..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">2. Conclusiones de la IA (Lenguaje Natural)</label>
+                            <textarea class="form-control bg-light" id="dbConnAiConclusions" rows="3" placeholder="La IA escribirá aquí sus conclusiones tras analizar..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">3. Contexto Técnico Optimizado (Tokens)</label>
+                            <textarea class="form-control font-monospace bg-light" id="dbConnAiTechContext" rows="3" placeholder="La IA guardará aquí el contexto para que otros reportes consuman menos tokens..."></textarea>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -1738,14 +1837,15 @@ if (!isset($_SESSION['user_id'])) {
 </div>
 
 <!-- Logic -->
-<script src="assets/js/app.js"></script>
-<script src="assets/js/scenarios.js"></script>
-<script src="assets/js/tables.js"></script>
-<script src="assets/js/db_connections.js"></script>
-<script src="assets/js/connections.js"></script>
-<script src="assets/js/actions.js"></script>
-<script src="assets/js/users.js"></script>
-<script src="assets/js/logs.js"></script>
+<script src="assets/js/app.js?v=<?php echo filemtime('assets/js/app.js'); ?>"></script>
+<script src="assets/js/scenarios.js?v=<?php echo filemtime('assets/js/scenarios.js'); ?>"></script>
+<script src="assets/js/tables.js?v=<?php echo filemtime('assets/js/tables.js'); ?>"></script>
+<script src="assets/js/db_connections.js?v=<?php echo filemtime('assets/js/db_connections.js'); ?>"></script>
+<script src="assets/js/visual_builder.js?v=<?php echo filemtime('assets/js/visual_builder.js'); ?>"></script>
+<script src="assets/js/connections.js?v=<?php echo filemtime('assets/js/connections.js'); ?>"></script>
+<script src="assets/js/actions.js?v=<?php echo filemtime('assets/js/actions.js'); ?>"></script>
+<script src="assets/js/users.js?v=<?php echo filemtime('assets/js/users.js'); ?>"></script>
+<script src="assets/js/logs.js?v=<?php echo filemtime('assets/js/logs.js'); ?>"></script>
 <!-- Quill.js for Rich Text Editing -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <!-- SheetJS -->
